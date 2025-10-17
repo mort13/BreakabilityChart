@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Star Citizen Mining Loadout Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Chart.js for graph -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: sans-serif; margin: 20px; background: #0a0a0a; color: #ddd; }
+    .tabs { display: flex; border-bottom: 2px solid #444; }
+    .tab { padding: 10px 20px; cursor: pointer; border: 1px solid #444; border-bottom: none; background: #222; margin-right: 5px; }
+    .tab.active { background: #333; font-weight: bold; }
+    .tab-content { display: none; margin-top: 20px; }
+    .tab-content.active { display: block; }
+    select, input { background: #222; color: #ddd; border: 1px solid #555; padding: 5px; }
+    canvas { background: #111; border: 1px solid #444; }
+    .laser-slot { border: 1px solid #555; padding: 10px; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Star Citizen Mining Loadout Tool</h1>
+
+  <div class="tabs">
+    <div class="tab active" data-target="loadoutTab">Loadouts</div>
+    <div class="tab" data-target="graphTab">Graph</div>
+  </div>
+
+  <!-- Loadout tab -->
+  <div id="loadoutTab" class="tab-content active">
+    <label>Select Ship:</label>
+    <select id="shipSelect">
+      <option value="Prospector">Prospector</option>
+      <option value="Mole">Mole</option>
+    </select>
+
+    <div id="laserSlots"></div>
+  </div>
+
+  <!-- Graph tab -->
+  <div id="graphTab" class="tab-content">
+    <div id="loadoutToggles"></div>
+    <canvas id="miningChart" width="800" height="400"></canvas>
+    <div>
+      <label>Mass (m):</label><input type="number" id="massInput" value="10" step="0.1">
+      <label>Resistance (R):</label><input type="number" id="resistanceInput" value="0.5" step="0.01">
+      <button onclick="updateMarker()">Update</button>
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

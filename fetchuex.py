@@ -2,7 +2,7 @@ import requests
 import json
 import os
 
-TOKEN = "2529e1d9a742794ff004fdc782af32b808293bf2"
+TOKEN = input()
 OUTPUT_DIR = "data"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 

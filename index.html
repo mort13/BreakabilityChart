@@ -2,53 +2,75 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Star Citizen Mining Loadout Tool</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Chart.js for graph -->
+  <title>Mining Laser Setup</title>
+  <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body { font-family: sans-serif; margin: 20px; background: #0a0a0a; color: #ddd; }
-    .tabs { display: flex; border-bottom: 2px solid #444; }
-    .tab { padding: 10px 20px; cursor: pointer; border: 1px solid #444; border-bottom: none; background: #222; margin-right: 5px; }
-    .tab.active { background: #333; font-weight: bold; }
-    .tab-content { display: none; margin-top: 20px; }
-    .tab-content.active { display: block; }
-    select, input { background: #222; color: #ddd; border: 1px solid #555; padding: 5px; }
-    canvas { background: #111; border: 1px solid #444; }
-    .laser-slot { border: 1px solid #555; padding: 10px; margin-bottom: 10px; }
-  </style>
 </head>
 <body>
-  <h1>Star Citizen Mining Loadout Tool</h1>
-
+  <button id="darkModeToggle" class="dark-mode-toggle">🌙</button>
   <div class="tabs">
-    <div class="tab active" data-target="loadoutTab">Loadouts</div>
-    <div class="tab" data-target="graphTab">Graph</div>
+    <button class="tab-button active" data-tab="mining-laser">Mining Laser Setup</button>
+    <button class="tab-button" data-tab="breakability">Breakability Chart</button>
   </div>
 
-  <!-- Loadout tab -->
-  <div id="loadoutTab" class="tab-content active">
-    <label>Select Ship:</label>
-    <select id="shipSelect">
-      <option value="Prospector">Prospector</option>
-      <option value="Mole">Mole</option>
-    </select>
-
-    <div id="laserSlots"></div>
+  <div class="tab-content" id="mining-laser">
+    <button id="addLaserheadBtn">Add Laserhead</button>
+    <button id="displayOptionsBtn">Display Options</button>
+    <div id="selectedList"></div>
   </div>
 
-  <!-- Graph tab -->
-  <div id="graphTab" class="tab-content">
-    <div id="loadoutToggles"></div>
-    <canvas id="miningChart" width="800" height="400"></canvas>
-    <div>
-      <label>Mass (m):</label><input type="number" id="massInput" value="10" step="0.1">
-      <label>Resistance (R):</label><input type="number" id="resistanceInput" value="0.5" step="0.01">
-      <button onclick="updateMarker()">Update</button>
+  <div class="tab-content hidden" id="breakability">
+    <h2>Breakability Chart</h2>
+    <div class="chart-container">
+        <canvas id="miningChart"></canvas>
+    </div>
+    <div class="gadget-selector">
+        <label for="gadgetSelect">Gadget:</label>
+        <select id="gadgetSelect">
+            <option value="none">None</option>
+        </select>
     </div>
   </div>
 
-  <script src="data.js"></script>
-  <script src="script.js"></script>
+  <!-- Laserhead Selection Modal -->
+  <div id="laserheadModal" class="hidden">
+    <div class="modal-content">
+      <button id="closeModalBtn">✕</button>
+      <div class="filter-buttons">
+        <button class="sizeFilter" data-size="1">S1</button>
+        <button class="sizeFilter" data-size="2">S2</button>
+      </div>
+      <div id="laserheadCards"></div>
+    </div>
+  </div>
+
+  <!-- Display Options Modal -->
+  <div id="displayOptionsModal" class="hidden">
+    <div class="modal-content">
+      <button id="closeDisplayOptionsBtn">✕</button>
+      <div class="display-options-container">
+        <div class="display-options-column">
+          <h3>Laserhead Attributes</h3>
+          <div id="displayOptionsCheckboxes"></div>
+        </div>
+        <div class="display-options-column">
+          <h3>Module Attributes</h3>
+          <div id="moduleOptionsCheckboxes"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Module Selection Modal -->
+  <div id="moduleModal" class="hidden">
+    <div class="modal-content">
+      <button id="closeModuleModalBtn">✕</button>
+      <h3>Select Module</h3>
+      <div id="moduleCards"></div>
+    </div>
+  </div>
+
+  <!-- Load main script as a module -->
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

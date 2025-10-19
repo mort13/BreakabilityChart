@@ -1,0 +1,906 @@
+/* ===========================
+   COLOR SYSTEM - LIGHT MODE
+   =========================== */
+:root {
+  /* Text Colors */
+  --color-text-primary: #474747;        /* Main text, names, labels */
+  --color-text-values: #000;         /* Values and units */
+  
+  /* Background Colors */
+  --color-bg-main: #ffffff;          /* Main background */
+  --color-bg-card: #cccccc;          /* Cards (laserheads, modules) */
+  --color-bg-highlight: #e2e2e2;       /* Sub-elements like module slots */
+  --color-bg-selected-laserhead: #e2e2e2;  /* Selected laserhead container */
+  
+  /* Hover Colors - Light mode: darker on hover */
+  --color-hover-brightness: 0.9;     /* Multiply by 0.9 to darken */
+  
+  /* Button Colors */
+  --color-btn-add: #365d8f;          /* Add buttons */
+  --color-btn-replace: #eb8d35;     /* Replace buttons */
+  --color-btn-delete: #dc3545;       /* Delete/Remove buttons */
+  --color-btn-default: #eee;         /* Default buttons */
+  
+  /* UI Colors */
+  --color-border: #ddd;
+  --color-border-light: #f0f0f0;
+  --color-accent: #365d8f;
+  --color-text-muted: #4d4d4d;
+  --color-tab-active: #365d8f;      /* Active tab color */
+  
+  /* Chart Colors */
+  --color-chart-axis: #000;          /* Chart axis borders */
+  --color-chart-grid: rgba(0, 0, 0, 0.1);  /* Chart grid lines */
+  
+  /* Plot Colors - Light Mode (vibrant, saturated for white background) */
+  --color-plot-1: rgb(231, 76, 60);    /* strong red */
+  --color-plot-2: rgb(52, 152, 219);   /* bright blue */
+  --color-plot-3: rgb(46, 204, 113);   /* emerald green */
+  --color-plot-4: rgb(230, 126, 34);   /* vivid orange */
+  --color-plot-5: rgb(155, 89, 182);   /* rich purple */
+  --color-plot-6: rgb(241, 196, 15);   /* golden yellow */
+  --color-plot-total: rgb(0, 0, 0);    /* black for total curve */
+}
+
+/* ===========================
+   COLOR SYSTEM - DARK MODE
+   =========================== */
+body.dark-mode {
+  /* Text Colors */
+  --color-text-primary: #ffffff;     /* Main text, names, labels */
+  --color-text-values: #d3d3d3;      /* Values and units */
+  
+  /* Background Colors */
+  --color-bg-main: #1a1a1a;          /* Main background */
+  --color-bg-card: #1b1b1b;          /* Cards (laserheads, modules) */
+  --color-bg-highlight: #2e2e2e;        /* Sub-elements like module slots */
+  --color-bg-selected-laserhead: #2e2e2e;  /* Selected laserhead container */
+  
+  /* Hover Colors - Dark mode: lighter on hover */
+  --color-hover-brightness: 1.2;     /* Multiply by 1.2 to lighten */
+  
+  /* Button Colors */
+  --color-btn-add: #1a6d2d;          /* Add buttons */
+  --color-btn-replace: #744111;      /* Replace buttons */
+  --color-btn-delete: #a72a2a;       /* Delete/Remove buttons */
+  --color-btn-default: #333;         /* Default buttons */
+  
+  /* UI Colors */
+  --color-border: #444;
+  --color-border-light: #444;
+  --color-accent: #607a96;
+  --color-text-muted: #ffffff;
+  --color-tab-active: #1a6d2d;       /* Active tab color */
+  
+  /* Chart Colors */
+  --color-chart-axis: #afafaf;       /* Chart axis borders */
+  --color-chart-grid: rgba(218, 255, 55, 0.1);  /* Chart grid lines */
+  
+  /* Plot Colors - Dark Mode (lighter, more pastel for dark background) */
+  --color-plot-1: rgb(255, 120, 110);  /* lighter red */
+  --color-plot-2: rgb(100, 180, 255);  /* lighter blue */
+  --color-plot-3: rgb(100, 230, 160);  /* lighter green */
+  --color-plot-4: rgb(255, 170, 100);  /* lighter orange */
+  --color-plot-5: rgb(200, 140, 220);  /* lighter purple */
+  --color-plot-6: rgb(255, 220, 100);  /* lighter yellow */
+  --color-plot-total: rgb(255, 255, 255); /* white for total curve */
+}
+
+body {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+  background-color: var(--color-bg-main);
+  color: var(--color-text-primary);
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* ===========================
+   BUTTONS
+   =========================== */
+button {
+  cursor: pointer;
+  margin: 5px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-btn-default);
+  color: var(--color-text-primary);
+  transition: filter 0.2s;
+}
+
+button:hover {
+  filter: brightness(var(--color-hover-brightness));
+}
+
+/* Module-level Action Buttons - Use colored buttons */
+
+/* Add Module Buttons */
+.add-module-btn {
+  background-color: var(--color-btn-add) !important;
+  color: white !important;
+  border-color: var(--color-btn-add) !important;
+}
+
+/* Replace Module Buttons */
+.replace-module-btn {
+  background-color: var(--color-btn-replace) !important;
+  color: white !important;
+  border-color: var(--color-btn-replace) !important;
+}
+
+/* Remove/Delete Buttons */
+.remove-module-btn,
+.remove-laserhead-btn {
+  background-color: var(--color-btn-delete) !important;
+  color: white !important;
+  border-color: var(--color-btn-delete) !important;
+}
+
+/* Dark Mode Toggle */
+.dark-mode-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 50px;
+  height: 50px;
+  font-size: 24px;
+  background: var(--color-btn-default);
+  border: 2px solid var(--color-border);
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 1000;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.dark-mode-toggle:hover {
+  filter: brightness(var(--color-hover-brightness));
+  transform: scale(1.1);
+}
+
+/* Tab Styles */
+.tabs {
+  margin-bottom: 20px;
+  border-bottom: 2px solid #ccc;
+}
+
+.tab-button {
+  padding: 10px 20px;
+  font-size: 16px;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: 5px 5px 0 0;
+  margin: 0;
+  margin-right: 5px;
+  color: var(--color-text-primary);
+  transition: filter 0.2s;
+}
+
+.tab-button:hover {
+  filter: brightness(var(--color-hover-brightness));
+}
+
+.tab-button.active {
+  background-color: var(--color-tab-active);
+  color: white;
+  border-color: var(--color-tab-active);
+}
+
+.tab-content {
+  padding: 20px 0;
+  height: calc(100vh - 100px);
+  box-sizing: border-box;
+}
+
+#breakability {
+  display: flex;
+  flex-direction: column;
+}
+
+#breakability h2 {
+  margin-top: 0;
+}
+
+.gadget-selector {
+  margin: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gadget-selector label {
+  font-weight: bold;
+}
+
+.gadget-selector select {
+  padding: 5px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  min-width: 200px;
+}
+
+.chart-container {
+  flex: 1;
+  position: relative;
+  width: 100%;
+  min-height: 400px;
+}
+
+.sizeFilter.active {
+  background-color: var(--color-tab-active);
+  color: white;
+  border-color: var(--color-tab-active);
+}
+
+#laserheadModal, #displayOptionsModal, #moduleModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ===========================
+   MODALS
+   =========================== */
+.modal-content {
+  background: var(--color-bg-main);
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 1200px;
+  color: var(--color-text-primary);
+}
+
+/* Close buttons in modals */
+#closeModalBtn,
+#closeDisplayOptionsBtn,
+#closeModuleModalBtn {
+  background: var(--color-btn-delete) !important;
+  color: white !important;
+  border: none !important;
+  padding: 5px 10px !important;
+  border-radius: 3px !important;
+  font-size: 16px !important;
+  font-weight: bold !important;
+}
+
+#closeModalBtn:hover,
+#closeDisplayOptionsBtn:hover,
+#closeModuleModalBtn:hover {
+  filter: brightness(var(--color-hover-brightness)) !important;
+}
+
+.display-options-container {
+  display: flex;
+  gap: 40px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.display-options-column {
+  flex: 1;
+  max-width: 400px;
+}
+
+.display-options-column h3 {
+  color: var(--color-text-primary);
+}
+
+.display-options-column label {
+  color: var(--color-text-primary);
+}
+
+.display-options-column h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #ddd;
+}
+
+.filter-buttons {
+  margin-bottom: 10px;
+}
+
+#laserheadCards, #moduleCards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 5px;
+}
+
+#selectedList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+/* ===========================
+   CARDS
+   =========================== */
+.laser-card, .laserhead-card {
+  border: 2px solid var(--color-accent);
+  border-radius: 5px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  background-color: var(--color-bg-card);
+  transition: transform 0.1s, box-shadow 0.1s, filter 0.2s;
+  width: max-content;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.laserhead-card:hover,
+.laser-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+  border-color: var(--color-accent);
+  filter: brightness(var(--color-hover-brightness));
+}
+
+.laserhead-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.laserhead-card .size {
+  font-weight: bold;
+  color: var(--color-accent);
+  background: rgba(0, 123, 255, 0.1);
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+.laserhead-card .name,
+.laser-card .name {
+  font-weight: bold;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  margin-left: 10px;
+  flex-grow: 1;
+  cursor: text;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background-color: var(--color-bg-highlight);
+  transition: filter 0.2s;
+}
+
+.laserhead-card .name:hover {
+  filter: brightness(var(--color-hover-brightness));
+}
+
+.laserhead-card .name:focus {
+  outline: none;
+  background-color: #fff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.3);
+}
+
+.laserhead-card .attributes-table {
+  border-collapse: collapse;
+  margin: 0;
+  width: 100%;
+  font-size: 12px;
+  table-layout: auto;
+}
+
+/* ===========================
+   ATTRIBUTE TABLES
+   =========================== */
+.laserhead-card .attributes-table td {
+  padding: 3px 0;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.laserhead-card .attributes-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Attribute Names */
+.laserhead-card .attr-name,
+.laser-card td:first-child,
+.module-table td:first-child,
+.selected-laserhead .attr-name {
+  text-align: left;
+  color: var(--color-text-primary);
+  font-size: 12px;
+  white-space: nowrap;
+  padding-right: 15px;
+  width: 100%;
+}
+
+/* Values and Units */
+.laserhead-card .attributes-table .value-number,
+.laserhead-card .value-number,
+.laser-card td.value-number,
+.module-table td.value-number,
+.selected-laserhead .value-number {
+  text-align: right;
+  font-weight: bold;
+  color: var(--color-text-values);
+  white-space: nowrap;
+  padding-right: 8px;
+  min-width: 60px;
+  width: 1%;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+
+.laserhead-card .value-number {
+  padding-right: 4px;
+}
+
+.laserhead-card .attributes-table .value-unit,
+.laserhead-card .value-unit,
+.laser-card td.value-unit,
+.module-table td.value-unit,
+.selected-laserhead .value-unit {
+  text-align: left;
+  color: var(--color-text-values);
+  padding-left: 0;
+  font-size: 12px;
+  width: 35px;
+  white-space: nowrap;
+  width: 1%;
+}
+
+.laserhead-card .value-unit {
+  text-align: left;
+  color: #666;
+  padding-left: 0;
+  font-size: 12px;
+  width: 35px;
+  white-space: nowrap;
+  width: 1%;
+}
+
+.laser-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.laser-card h3 {
+  font-size: 12px;
+  margin: 0 0 5px 0;
+  white-space: nowrap;
+}
+
+.laser-card table {
+  border-collapse: collapse;
+  font-size: 12px;
+  table-layout: auto;
+  margin: 0;
+  width: 100%;
+}
+
+.laser-card .name {
+  font-weight: bold;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  padding: 5px 0 10px 0;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 10px;
+}
+
+.laser-card td {
+  padding: 2px 4px;
+}
+
+.laser-card td:first-child {
+  white-space: nowrap;
+  text-align: left;
+  font-weight: bold;
+  padding-right: 8px;
+}
+
+.laser-card td.value-number {
+  text-align: right;
+  white-space: nowrap;
+  padding-right: 4px;
+  min-width: 40px;
+}
+
+.laser-card td.value-unit {
+  text-align: left;
+  white-space: nowrap;
+  width: 35px; /* Fixed width for unit column */
+  padding-left: 0;
+}
+
+/* ===========================
+   SELECTED LASERHEAD
+   =========================== */
+.selected-laserhead {
+  border: 2px solid var(--color-accent);
+  border-radius: 5px;
+  padding: 10px;
+  margin: 5px;
+  background-color: var(--color-bg-selected-laserhead);
+  width: fit-content;
+  max-width: 100%;
+}
+
+.selected-laserhead .laserhead-info {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  gap: 10px;
+}
+
+.selected-laserhead .size {
+  font-weight: bold;
+  color: var(--color-text-primary);
+  margin-right: 5px;
+}
+
+.selected-laserhead .name {
+  font-weight: bold;
+  flex-grow: 1;
+  cursor: text;
+  padding: 2px 5px;
+  border-radius: 3px;
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-highlight);
+  transition: filter 0.2s;
+}
+
+.selected-laserhead .name:hover {
+  filter: brightness(var(--color-hover-brightness));
+}
+
+.selected-laserhead .name:focus {
+  outline: none;
+  background-color: #fff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.3);
+}
+
+.module-name.clickable {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.module-name.clickable:hover {
+  color: #007bff;
+}
+
+.selected-laserhead .remove-btn {
+  padding: 2px 8px;
+  background: var(--color-btn-delete);
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.selected-laserhead .remove-btn:hover {
+  filter: brightness(var(--color-hover-brightness));
+}
+
+.selected-laserhead .add-module {
+  margin-top: 10px;
+  width: 100%;
+  padding: 5px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.selected-laserhead table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.selected-laserhead td {
+  padding: 3px 6px;
+  font-size: 12px;
+  font-family: 'Consolas', 'Monaco', monospace;
+}
+
+.selected-laserhead .modules {
+  margin-top: 15px;
+  border-top: 2px solid var(--color-accent);
+  padding-top: 15px;
+  background: var(--color-bg-card);
+  border-radius: 5px;
+  padding: 15px;
+}
+
+
+
+/* ===========================
+   MODULE SLOTS
+   =========================== */
+.selected-laserhead .module-slot {
+  padding: 10px;
+  margin-bottom: 10px;
+  background: var(--color-bg-highlight);
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  width: auto;
+  min-width: min-content;
+}
+
+.selected-laserhead .module-slot.empty {
+  border-style: dashed;
+  padding: 10px;
+}
+
+.selected-laserhead .module-slot .module-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.selected-laserhead .module-slot .module-slot-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.selected-laserhead .module-slot .slot-number {
+  font-size: 12px;
+  color: var(--color-text-primary);
+  background: var(--color-bg-card);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.selected-laserhead .module-slot .module-name {
+  font-weight: bold;
+  cursor: default;
+  transition: opacity 0.2s, color 0.2s;
+  color: var(--color-text-primary);
+}
+
+.selected-laserhead .module-slot .module-name.clickable {
+  cursor: pointer;
+}
+
+.selected-laserhead .module-slot .module-name:hover {
+  color: #007bff;
+}
+
+.selected-laserhead .module-slot .module-name.inactive {
+  color: #999;
+  font-weight: normal;
+}
+
+.selected-laserhead .module-slot .module-name.inactive:hover {
+  color: #666;
+}
+
+.selected-laserhead .module-slot table.inactive {
+  opacity: 0.5;
+}
+
+.selected-laserhead .module-slot .module-actions {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+/* Action buttons (replace, remove) shared styles */
+.replace-btn,
+.remove-btn {
+  padding: 2px 8px;
+  font-size: 12px;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.replace-btn {
+  background: var(--color-btn-replace);
+}
+
+.replace-btn:hover {
+  filter: brightness(var(--color-hover-brightness));
+}
+
+.remove-btn {
+  background: var(--color-btn-delete);
+}
+
+.remove-btn:hover {
+  filter: brightness(var(--color-hover-brightness));
+}
+
+.selected-laserhead .module-slot .add-module-btn {
+  width: 100%;
+  padding: 8px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-top: 5px;
+}
+
+.selected-laserhead .module-table {
+  width: auto;
+  border-collapse: collapse;
+  table-layout: fixed;
+  min-width: min-content;
+}
+
+.selected-laserhead .module-table td {
+  padding: 3px 6px;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selected-laserhead .module-table td:first-child {
+  color: var(--color-text-primary);
+  min-width: 120px;
+}
+
+.selected-laserhead .module-table td.value-number {
+  text-align: right;
+  font-weight: bold;
+  color: var(--color-text-values);
+  min-width: 20px;
+}
+
+.selected-laserhead .module-table td.value-unit {
+  color: #666;
+  padding-left: 4px;
+  min-width: 1px;
+  width: 10px;
+}
+
+/* Common table styles */
+.selected-laserhead table,
+.module-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+/* Value cells shared styles */
+td.value-number {
+  text-align: right;
+  font-weight: bold;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+  min-width: 60px;
+  width: 1%;
+  padding-right: 4px;
+  color: #000;
+  white-space: nowrap;
+}
+
+td.value-unit {
+  text-align: left;
+  color: #666;
+  padding-left: 4px;
+  width: 35px;
+  white-space: nowrap;
+}
+
+td.attr-name,
+td:first-child {
+  color: var(--color-text-primary);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.selected-laserhead .module-slot .no-attributes {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-style: italic;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 3px;
+  font-size: 14px;
+}
+
+.module-section {
+  margin-top: 20px;
+  border-top: 2px solid var(--color-accent);
+  padding-top: 15px;
+  width: auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-card);
+  border-radius: 5px;
+  padding: 15px;
+  box-sizing: border-box;
+  gap: 10px;
+  min-width: min-content;
+}
+
+/* Module slot styles */
+.module-slot {
+  margin: 5px 0;
+  padding: 8px;
+  border: 1px dashed #ccc;
+  border-radius: 4px;
+  width: auto;
+  box-sizing: border-box;
+  min-width: min-content;
+}
+
+/* Module header styles */
+.module-header,
+.module-slot .module-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.module-slot h4 {
+  margin: 0;
+  font-size: 12px;
+  flex-grow: 1;
+}
+
+/* Module action buttons */
+.add-module-btn,
+.replace-module-btn {
+  width: 100%;
+  padding: 3px;
+  font-size: 12px;
+  background: #f0f0f0;
+  margin-top: 5px;
+  border-radius: 3px;
+  border: none;
+}
+
+.module-table {
+  table-layout: auto;
+  margin: 0;
+}
+
+.module-table td {
+  padding: 2px 4px;
+}
+
+#moduleCards {
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 10px;
+  width: 90%;
+  max-width: 1200px;
+}
+
+#moduleCards .laser-card {
+  min-width: 250px;
+  flex: 1 1 300px;
+  max-width: 350px;
+  margin: 5px;
+  box-sizing: border-box;
+}

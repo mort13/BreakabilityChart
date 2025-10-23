@@ -10,7 +10,6 @@ function getCSSColor(variableName) {
     let color = getComputedStyle(document.body).getPropertyValue(variableName).trim();
     // Remove quotes if present
     color = color.replace(/^["']|["']$/g, '');
-    console.log(`Getting CSS color for ${variableName}: ${color}`);
     return color || '#000000'; // Fallback to black if empty
 }
 
@@ -212,12 +211,8 @@ export function setupChart() {
 export function updateBreakabilityChart() {
     if (!chart) return;
     
-    console.log('\n=== Updating Mining Configuration ===');
-    
     // Process selected laserheads
-    console.log('Current Configuration:');
     if (!selectedLaserheads || selectedLaserheads.length === 0) {
-        console.log('No laserheads selected');
         // Clear all laser datasets (keep marker and total)
         chart.data.datasets = chart.data.datasets.filter(ds => 
             ds.label === "Marker" || ds.group === 'total'
@@ -251,20 +246,9 @@ export function updateBreakabilityChart() {
 
     for (let i = 0; i < selectedLaserheads.length; i++) {
         const laserhead = selectedLaserheads[i];
-        console.log(`\nLaser ${i + 1}:`);
-        console.log(`  Laserhead: ${laserhead.name}`);
         
         // Get active modules
         const activeModules = laserhead.modules?.filter(m => m.isActive !== false) || [];
-        
-        console.log('  Modules:');
-        activeModules.forEach((module, idx) => {
-            console.log(`    ${idx + 1}. ${module.name} (Active)`);
-        });
-
-        if (activeModules.length === 0) {
-            console.log('    No active modules');
-        }
 
         // Calculate values for this laser
         const maxP = calculateTotalPower(laserhead, activeModules, true);
@@ -482,18 +466,18 @@ export function updateMarker() {
 import { selectedGadget } from './gadget-manager.js';
 
 function addLaserDataset(laserhead, modules, index) {
-    console.log(`\nProcessing Laserhead: ${laserhead.name}`);
-    
     const laserLabel = laserhead.customName || cleanLaserName(laserhead.name);
     const groupId = `laser_${index}_${laserLabel}`;  // Unique group ID using index
     
-    // Get base laser power from attributes
-    const powerAttr = laserhead.attributes.find(attr => 
-        attr.attribute_name === "Mining Laser Power"
+    // Verify that the required power attributes exist
+    const maxPowerAttr = laserhead.attributes.find(attr => 
+        attr.attribute_name === "Maximum Laser Power"
+    );
+    const minPowerAttr = laserhead.attributes.find(attr => 
+        attr.attribute_name === "Minimum Laser Power"
     );
     
-    if (!powerAttr) {
-        console.log(`ERROR: No power attribute found for ${laserhead.name}`);
+    if (!maxPowerAttr || !minPowerAttr) {
         return;
     }
     
@@ -501,10 +485,6 @@ function addLaserDataset(laserhead, modules, index) {
     const maxP = calculateTotalPower(laserhead, modules, true);  // true for max power
     const minP = calculateTotalPower(laserhead, modules, false); // false for min power
     const r_mod = calculateResistanceModifier(laserhead, modules, selectedGadget);
-    
-    console.log(`Final Max Power: ${maxP}`);
-    console.log(`Final Min Power: ${minP}`);
-    console.log(`Final Resistance Modifier: ${r_mod}`);
     
     const color = getColor(index);
     
@@ -573,38 +553,26 @@ function computeCurve(P, r_mod) {
 }
 
 function calculateTotalPower(laserhead, modules, useMax = true) {
-    console.log('Calculating total power:');
-    
-    // Get base power attribute
+    // Get the appropriate power attribute (Minimum or Maximum)
+    const powerAttrName = useMax ? "Maximum Laser Power" : "Minimum Laser Power";
     const powerAttr = laserhead.attributes.find(attr => 
-        attr.attribute_name === "Mining Laser Power"
+        attr.attribute_name === powerAttrName
     );
+    
     if (!powerAttr) {
-        console.log('  No power attribute found');
         return 0;
     }
 
-    // Handle range values like "900-3600"
-    const powerMatch = powerAttr.value.match(/^(\d+)-(\d+)$/);
-    let baseValue;
-    if (powerMatch) {
-        baseValue = useMax ? powerMatch[2] : powerMatch[1]; // Use max or min value based on parameter
-    } else {
-        baseValue = powerAttr.value;
-    }
-    
-    // Use calculateCombinedValue which already handles all module calculations
-    let result = baseValue;
+    // Use the value directly (no need to parse ranges anymore)
+    let result = powerAttr.value;
     const unit = getUnit(powerAttr) || 'MW';
     
     modules.forEach(module => {
         const powerMod = module.attributes.find(attr => 
-            attr.attribute_name === "Mining Laser Power"
+            attr.attribute_name === powerAttrName
         );
         if (powerMod) {
-            const oldValue = result;
-            result = calculateCombinedValue(result, powerMod.value, unit, module.isActive !== false, "Mining Laser Power");
-            console.log(`  Module ${module.name} changes power: ${oldValue} -> ${result}`);
+            result = calculateCombinedValue(result, powerMod.value, unit, module.isActive !== false, powerAttrName);
         }
     });
     
@@ -612,8 +580,6 @@ function calculateTotalPower(laserhead, modules, useMax = true) {
 }
 
 function calculateResistanceModifier(laserhead, modules, gadget = null) {
-    console.log('Calculating resistance modifier:');
-    
     // Get base resistance attribute or create virtual one with 0%
     let resistanceAttr = laserhead.attributes.find(attr => 
         attr.attribute_name === "Resistance"
@@ -626,21 +592,18 @@ function calculateResistanceModifier(laserhead, modules, gadget = null) {
     
     // If no base resistance but modules have it, start from 0%
     if (!resistanceAttr && hasResistanceModules) {
-        console.log('  No base resistance, starting from 0%');
         resistanceAttr = {
             attribute_name: "Resistance",
             value: "0",
             unit: "%"
         };
     } else if (!resistanceAttr) {
-        console.log('  No resistance modifiers found, using default');
         return 1;
     }
     
     // Start with base resistance value
     let resistance = parseFloat(resistanceAttr.value) || 0;
     const unit = getUnit(resistanceAttr) || '%';
-    console.log(`  Base resistance: ${resistance}%`);
     
     // Apply module modifiers
     modules.forEach(module => {
@@ -648,9 +611,7 @@ function calculateResistanceModifier(laserhead, modules, gadget = null) {
             attr.attribute_name === "Resistance"
         );
         if (resMod) {
-            const oldValue = resistance;
             resistance = parseFloat(calculateCombinedValue(resistance.toString(), resMod.value, unit, module.isActive !== false, "Resistance"));
-            console.log(`  Module ${module.name} changes resistance: ${oldValue}% -> ${resistance}%`);
         }
     });
 
@@ -660,15 +621,12 @@ function calculateResistanceModifier(laserhead, modules, gadget = null) {
             attr.attribute_name === "Resistance" && attr.value
         );
         if (gadgetResMod) {
-            const oldValue = resistance;
             resistance = parseFloat(calculateCombinedValue(resistance.toString(), gadgetResMod.value, unit, true, "Resistance"));
-            console.log(`  Gadget ${gadget.name} changes resistance: ${oldValue}% -> ${resistance}%`);
         }
     }
     
     // Convert final percentage to multiplier (e.g., 25% -> 1.25)
     const finalMultiplier = 1 + (resistance / 100);
-    console.log(`  Final resistance multiplier: ${finalMultiplier}`);
     return finalMultiplier;
 }
 
@@ -694,8 +652,6 @@ export function updateChartColors() {
     const chartAxis = getCSSColor('--color-chart-axis');
     const chartGrid = getCSSColor('--color-chart-grid');
     const bgCard = getCSSColor('--color-bg-card');
-    
-    console.log('Updating chart colors:', { textPrimary, textValues, chartAxis, chartGrid, bgCard });
     
     // Update container background color
     const container = chart.canvas.parentElement;

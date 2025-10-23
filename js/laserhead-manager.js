@@ -53,13 +53,13 @@ function processAttribute(attr, ignoreAttributeFilter = false, modules = []) {
         .map(a => parseFloat(a.value));
 
     if (!attr && moduleModifiers.length > 0) {
+        // Laser doesn't have this attribute, but a module modifies it
+        // Create a synthetic attribute with base value of 0 (factor of 1)
         const moduleAttr = modules[0].attributes.find(a => a.attribute_name === attrName);
         if (moduleAttr) {
-            const baseValue = moduleAttr.value;
-            moduleModifiers.shift();
             attr = {
                 attribute_name: attrName,
-                value: baseValue,
+                value: "0",  // Base value of 0 (factor of 1) when laser doesn't have attribute
                 unit: moduleAttr.unit
             };
         }
@@ -67,26 +67,20 @@ function processAttribute(attr, ignoreAttributeFilter = false, modules = []) {
 
     if(!attr || !attr.value) return [];
     
-    // Special handling for "Mining Laser Power" - treat it as if it contains Min/Max Laser Power
-    const isValidAttribute = ATTRIBUTE_ORDER_NAMES.includes(attr.attribute_name) || 
-                            attr.attribute_name === "Mining Laser Power";
+    // Check if attribute is valid and should be displayed
+    const isValidAttribute = ATTRIBUTE_ORDER_NAMES.includes(attr.attribute_name);
     
     if(!isValidAttribute) return [];
     
-    // For "Mining Laser Power", check if either Min or Max is enabled (unless ignoring filter)
-    if(!ignoreAttributeFilter && attr.attribute_name === "Mining Laser Power") {
-        const hasMinEnabled = window.displayAttributes.includes("Minimum Laser Power");
-        const hasMaxEnabled = window.displayAttributes.includes("Maximum Laser Power");
-        if (!hasMinEnabled && !hasMaxEnabled) return [];
-    } else if(!ignoreAttributeFilter && !window.displayAttributes.includes(attr.attribute_name)) {
+    // Check if attribute is in display filter
+    if(!ignoreAttributeFilter && !window.displayAttributes.includes(attr.attribute_name)) {
         return [];
     }
 
     const val = attr.value.trim();
     const unit = getUnit(attr);
-    const rangeMatch = val.match(/^(\d+(\.\d+)?)-(\d+(\.\d+)?)$/);
 
-        function formatValue(baseValue) {
+    function formatValue(baseValue) {
         let finalValue = parseFloat(baseValue);
         
         if (moduleModifiers.length > 0 && unit === '%') {
@@ -105,7 +99,7 @@ function processAttribute(attr, ignoreAttributeFilter = false, modules = []) {
             });
             
             // Convert final factor back to percentage
-            finalValue = (factor - 1) * 100;            // Round to 2 decimal places
+            finalValue = (factor - 1) * 100;
             finalValue = Math.round(finalValue * 100) / 100;
             
             // Remove decimal point if whole number
@@ -125,27 +119,6 @@ function processAttribute(attr, ignoreAttributeFilter = false, modules = []) {
         }
         
         return `<td class="value-number">${finalValue}</td><td class="value-unit">${unit}</td>`;
-    }
-
-    if (rangeMatch) {
-        const minVal = rangeMatch[1];
-        const maxVal = rangeMatch[3];
-        if (attr.attribute_name === "Mining Laser Power") {
-            const results = [];
-            // Check individually if each should be displayed
-            if (ignoreAttributeFilter || window.displayAttributes.includes("Minimum Laser Power")) {
-                results.push({ name: "Minimum Laser Power", value: formatValue(minVal) });
-            }
-            if (ignoreAttributeFilter || window.displayAttributes.includes("Maximum Laser Power")) {
-                results.push({ name: "Maximum Laser Power", value: formatValue(maxVal) });
-            }
-            return results;
-        } else {
-            return [
-                { name: `${attr.attribute_name} Min`, value: formatValue(minVal) },
-                { name: `${attr.attribute_name} Max`, value: formatValue(maxVal) }
-            ];
-        }
     }
     
     return [{ name: attr.attribute_name, value: formatValue(val) }];
@@ -350,64 +323,111 @@ export function renderSelectedLaserheads() {
     const container = document.getElementById('selectedList');
     if (!container) return;
     
-    container.innerHTML = selectedLaserheads.map((laserhead, idx) => {
-        // Get all displayable attributes (from both laserhead and modules)
-        const displayableAttributes = new Set(ATTRIBUTE_ORDER_NAMES);
+    // First pass: collect all unique attributes from all selected laserheads and modules
+    // Only include attributes that are in the display options
+    const allAttributeNames = new Set();
+    selectedLaserheads.forEach(laserhead => {
+        // Add laserhead attributes
+        (laserhead.attributes || []).forEach(attr => {
+            const processedAttrs = processAttribute(attr, false, laserhead.modules || []);
+            processedAttrs.forEach(pa => {
+                // Only add if it's in display options
+                if (window.displayAttributes.includes(pa.name)) {
+                    allAttributeNames.add(pa.name);
+                }
+            });
+        });
         
-        // First process existing laserhead attributes
+        // Add module attributes even if laserhead doesn't have them
+        (laserhead.modules || []).forEach(module => {
+            if (module && module.isActive !== false) {
+                (module.attributes || []).forEach(modAttr => {
+                    // If module has an attribute value and it's in display options, add it to the collection
+                    if (modAttr && modAttr.value && modAttr.value !== '0' && modAttr.value.trim() !== '' 
+                        && window.displayAttributes.includes(modAttr.attribute_name)) {
+                        allAttributeNames.add(modAttr.attribute_name);
+                    }
+                });
+            }
+        });
+    });
+    
+    // Create a sorted list of all attributes
+    const allAttributesArray = Array.from(allAttributeNames);
+    const sortedAllAttributes = sortAttributes(
+        allAttributesArray.map(name => ({ name, value: '' }))
+    ).map(a => a.name);
+    
+    container.innerHTML = selectedLaserheads.map((laserhead, idx) => {
+        // Get the number of module slots from the laserhead attributes
+        const moduleSlotAttr = laserhead.attributes?.find(attr => attr.attribute_name === "Module Slots");
+        const numModuleSlots = moduleSlotAttr ? parseInt(moduleSlotAttr.value, 10) : 3;
+        
+        // Process existing laserhead attributes
         const laserAttrs = (laserhead.attributes || [])
             .map(attr => processAttribute(attr, false, laserhead.modules || []))
             .flat()
-            .filter(Boolean);
+            .filter(Boolean)
+            // Only keep attributes in display options
+            .filter(attr => window.displayAttributes.includes(attr.name));
         
-        // Track which attributes we've already processed
-        const processedAttrs = new Set(laserAttrs.map(attr => attr.name.replace(/ (Min|Max)$/, "")));
+        // Create a map of attribute names to their values for quick lookup
+        const attrMap = new Map(laserAttrs.map(attr => [attr.name, attr]));
         
-        // Create virtual attributes for remaining displayable attributes
-        const virtualAttrs = Array.from(displayableAttributes)
-            .filter(attrName => !processedAttrs.has(attrName))
-            .map(attrName => {
-                // Check if any module has this attribute
-                const hasModuleWithAttr = laserhead.modules?.some(module => 
-                    module?.attributes?.some(attr => 
-                        attr.attribute_name === attrName && attr.value && attr.value !== '0'
-                    )
-                );
-                
-                if (hasModuleWithAttr) {
-                    // Create virtual attribute
-                    const virtualAttr = {
-                        attribute_name: attrName,
-                        value: "0",
-                        unit: "%"
-                    };
-                    return processAttribute(virtualAttr, false, laserhead.modules || []);
-                }
-                return [];
-            })
-            .flat()
-            .filter(Boolean);
-
-        // Combine and sort all attributes
-        const attrs = [...laserAttrs, ...virtualAttrs];
-
-        // Sort attributes in display order
-        const sortedAttrs = sortAttributes(attrs);
-
-        // Generate table rows
-        const rows = sortedAttrs.map(attr => `
-            <tr>
-                <td>${attr.name}</td>
-                ${attr.value}
-            </tr>
-        `).join('');
+        // Add synthetic attributes from modules for attributes the laserhead doesn't have
+        (laserhead.modules || []).forEach(module => {
+            if (module && module.isActive !== false) {
+                (module.attributes || []).forEach(modAttr => {
+                    // If laserhead doesn't have this attribute but module modifies it
+                    // AND it's in display options
+                    if (!attrMap.has(modAttr.attribute_name) && modAttr.value && modAttr.value !== '0' && modAttr.value.trim() !== ''
+                        && window.displayAttributes.includes(modAttr.attribute_name)) {
+                        // Create synthetic attribute as if laser has it with factor 1
+                        const syntheticAttr = {
+                            attribute_name: modAttr.attribute_name,
+                            value: "0",
+                            unit: modAttr.unit
+                        };
+                        const processedAttrs = processAttribute(syntheticAttr, false, [module]);
+                        processedAttrs.forEach(pa => {
+                            if (!attrMap.has(pa.name)) {
+                                attrMap.set(pa.name, pa);
+                            }
+                        });
+                    }
+                });
+            }
+        });
+        
+        // Generate table rows with all attributes, filling in empty rows where needed
+        const rows = sortedAllAttributes.map(attrName => {
+            const attr = attrMap.get(attrName);
+            if (attr) {
+                // Attribute exists for this laserhead
+                return `
+                    <tr>
+                        <td>${attr.name}</td>
+                        ${attr.value}
+                    </tr>
+                `;
+            } else {
+                // Attribute doesn't exist for this laserhead - create empty row
+                return `
+                    <tr>
+                        <td>${attrName}</td>
+                        <td class="value-number">-</td>
+                        <td class="value-unit"></td>
+                    </tr>
+                `;
+            }
+        }).join('');
 
         // Generate module slots with a section header
         const moduleSection = `
         <div class="module-section">
             <h3 class="module-section-title">Modules</h3>
             <div class="module-slots">
-            ${Array(3).fill(null).map((_, i) => {
+            ${Array(numModuleSlots).fill(null).map((_, i) => {
             const module = laserhead.modules[i];
             if (module) {
                 const moduleAttrs = MODULE_ATTRIBUTE_ORDER
@@ -482,7 +502,7 @@ export function renderSelectedLaserheads() {
                     <tbody>${rows}</tbody>
                 </table>
                 <div class="module-section">
-                        ${Array(3).fill(null).map((_, i) => {
+                        ${Array(numModuleSlots).fill(null).map((_, i) => {
                             const module = laserhead.modules[i];
                             if (module) {
                                 const moduleAttrs = MODULE_ATTRIBUTE_ORDER
@@ -550,4 +570,44 @@ export function renderSelectedLaserheads() {
     
     // Add event handlers for name editing after rendering
     addNameEditingHandlers(container);
+    
+    // Equalize card heights after rendering
+    equalizeSelectedCardHeights();
+}
+
+// Function to equalize the height of all selected laserhead cards using padding
+function equalizeSelectedCardHeights() {
+    const container = document.getElementById('selectedList');
+    if (!container) return;
+    
+    const cards = container.querySelectorAll('.selected-laserhead');
+    if (cards.length === 0) return;
+    
+    // Reset padding to get natural heights
+    cards.forEach(card => {
+        card.style.paddingBottom = '';
+    });
+    
+    // Use requestAnimationFrame to ensure layout is calculated
+    requestAnimationFrame(() => {
+        let maxHeight = 0;
+        
+        // Find the maximum height
+        cards.forEach(card => {
+            const rect = card.getBoundingClientRect();
+            maxHeight = Math.max(maxHeight, rect.height);
+        });
+        
+        // Apply additional padding-bottom to cards that are shorter
+        if (maxHeight > 0) {
+            cards.forEach(card => {
+                const rect = card.getBoundingClientRect();
+                const heightDifference = maxHeight - rect.height;
+                if (heightDifference > 0) {
+                    const currentPaddingBottom = parseFloat(getComputedStyle(card).paddingBottom) || 10;
+                    card.style.paddingBottom = (currentPaddingBottom + heightDifference) + 'px';
+                }
+            });
+        }
+    });
 }

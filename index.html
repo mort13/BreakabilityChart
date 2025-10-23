@@ -11,16 +11,18 @@
   <div class="tabs">
     <button class="tab-button active" data-tab="mining-laser">Mining Laser Setup</button>
     <button class="tab-button" data-tab="breakability">Breakability Chart</button>
+    <button class="tab-button" data-tab="about">About</button>
   </div>
 
   <div class="tab-content" id="mining-laser">
     <button id="addLaserheadBtn">Add Laserhead</button>
     <button id="displayOptionsBtn">Display Options</button>
     <div id="selectedList"></div>
+    <div id="footerContainer"></div>
   </div>
 
   <div class="tab-content hidden" id="breakability">
-    <h2>Breakability Chart</h2>
+  <!-- Removed redundant chart tab title -->
     <div class="chart-container">
         <canvas id="miningChart"></canvas>
     </div>
@@ -30,6 +32,41 @@
             <option value="none">None</option>
         </select>
     </div>
+    <div id="footerContainer"></div>
+  </div>
+
+  <div class="tab-content hidden" id="about">
+  <!-- Removed redundant about tab title -->
+    <div class="about-content">
+      <div class="about-section">
+        <h3>Mining Laser Breakability Chart</h3>
+        <p>This tool provides an interactive way to explore and analyze mining laser equipment configurations in Star Citizen. It allows you to:</p>
+        <ul>
+          <li><strong>Setup Mining Lasers:</strong> Configure laserheads and modules to create custom mining laser setups.</li>
+          <li><strong>Compare Breakability:</strong> View detailed breakability charts! Here you get a visual representation of all the Rocks you can crack with your setup.</li>
+          <li><strong>Optimize Configurations:</strong> Experiment with different gadgets and modules to find the best setup for your needs.</li>
+        </ul>
+      </div>
+      <div class="about-section">
+        <h3>How It Works</h3>
+        <p><strong>Mining Laser Setup Tab:</strong></p>
+        <ul>
+          <li>Click "Add Laserhead" to select a laserhead and customize its configuration.</li>
+          <li>For each laserhead, you can add multiple modules to enhance its capabilities.</li>
+          <li>Rename Laserhead names and deactivate active modules by clicking on them.</li>
+          <li>Use "Display Options" to show/hide specific attributes.</li>
+        </ul>
+        <p><strong>Breakability Chart Tab:</strong></p>
+        <ul>
+          <li>On the X axis you see the resistance in %, on the Y axis the mass. The breakability only depends on these two values.</li>
+          <li>The chart shows the maximum mass/resistance rocks you can break with your setup. Here the unmodified rock values are used.</li>
+          <li>The unmodified rock values are the one you see e.g. from the moles pilot seat. Only unmodified numbers appear white ingame.</li>
+          <li>You can deactivate a laser by clicking on its name in the legend.</li>
+          <li>Use the gadget selector to see how breakability changes with different gadgets.</li>
+        </ul>
+      </div>
+    </div>
+    <div id="footerContainer"></div>
   </div>
 
   <!-- Laserhead Selection Modal -->
@@ -69,6 +106,24 @@
       <div id="moduleCards"></div>
     </div>
   </div>
+
+  <!-- Footer Template -->
+  <template id="footerTemplate">
+    <div class="about-footer">
+      <span class="footer-dev">
+        Developed by Mort13
+        <a href="https://discord.gg/rosenrudel" target="_blank" rel="noopener noreferrer">
+          <img src="data/rosenrudel.png" alt="Rosenrudel Logo" class="rosenrudel-logo">
+        </a>
+      </span>
+      <span class="footer-powered">
+        Powered by
+        <a href="https://uexcorp.space/" target="_blank" rel="noopener noreferrer">
+          <img src="data/logo-black.png" alt="UEX Corp Logo" class="uex-logo">
+        </a>
+      </span>
+    </div>
+  </template>
 
   <!-- Load main script as a module -->
   <script type="module" src="js/main.js"></script>

@@ -133,6 +133,7 @@ export function setupDarkModeToggle() {
     if (isDarkMode) {
         document.body.classList.add('dark-mode');
         toggleBtn.textContent = '☀️';
+        updateUexLogo(true);
     }
     
     toggleBtn.addEventListener('click', () => {
@@ -147,7 +148,30 @@ export function setupDarkModeToggle() {
         
         // Update chart colors
         updateChartColors();
+        
+        // Update UEX logo
+        updateUexLogo(isNowDark);
     });
+}
+
+function updateUexLogo(isDarkMode) {
+    const logos = document.querySelectorAll('.uex-logo');
+    logos.forEach(logo => {
+        logo.src = isDarkMode ? 'data/logo-white.png' : 'data/logo-black.png';
+    });
+}
+
+// New function to inject footer template into all tabs
+export function injectFooterToTabs() {
+  const footerTemplate = document.getElementById('footerTemplate');
+  if (!footerTemplate) return;
+  document.querySelectorAll('#footerContainer').forEach(container => {
+    container.innerHTML = '';
+    container.appendChild(footerTemplate.content.cloneNode(true));
+  });
+  // Update logo for theme
+  const isDarkMode = document.body.classList.contains('dark-mode');
+  updateUexLogo(isDarkMode);
 }
 
 // Export functions that need to be globally available
@@ -158,3 +182,4 @@ window.showModuleSelection = showModuleSelection;
 window.removeModule = removeModule;
 window.toggleModule = toggleModule;
 window.updateMarker = updateMarker;
+window.injectFooterToTabs = injectFooterToTabs;

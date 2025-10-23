@@ -1,36 +1,36 @@
 /* ===========================
-   COLOR SYSTEM - LIGHT MODE
+   COLOR SYSTEM - LIGHT MODE (Bright Argo Theme)
    =========================== */
 :root {
   /* Text Colors */
-  --color-text-primary: #474747;        /* Main text, names, labels */
+  --color-text-primary: #1a1a1a;        /* Main text, names, labels (dark) */
   --color-text-values: #000;         /* Values and units */
   
   /* Background Colors */
-  --color-bg-main: #ffffff;          /* Main background */
-  --color-bg-card: #cccccc;          /* Cards (laserheads, modules) */
-  --color-bg-highlight: #e2e2e2;       /* Sub-elements like module slots */
-  --color-bg-selected-laserhead: #e2e2e2;  /* Selected laserhead container */
+  --color-bg-main: #f5f5f5;          /* Main background (light gray) */
+  --color-bg-card: #e8e8e8;          /* Cards (laserheads, modules) */
+  --color-bg-highlight: #ffffff;       /* Sub-elements like module slots (white) */
+  --color-bg-selected-laserhead: #fff3e0;  /* Selected laserhead container (light orange tint) */
   
   /* Hover Colors - Light mode: darker on hover */
   --color-hover-brightness: 0.9;     /* Multiply by 0.9 to darken */
   
   /* Button Colors */
-  --color-btn-add: #365d8f;          /* Add buttons */
-  --color-btn-replace: #eb8d35;     /* Replace buttons */
-  --color-btn-delete: #dc3545;       /* Delete/Remove buttons */
-  --color-btn-default: #eee;         /* Default buttons */
+  --color-btn-add: #ff8c42;          /* Argo orange for add buttons */
+  --color-btn-replace: #ffb366;     /* Lighter argo orange for replace */
+  --color-btn-delete: #e67e22;       /* Dark argo orange for delete */
+  --color-btn-default: #f0f0f0;         /* Default buttons */
   
   /* UI Colors */
   --color-border: #ddd;
   --color-border-light: #f0f0f0;
-  --color-accent: #365d8f;
-  --color-text-muted: #4d4d4d;
-  --color-tab-active: #365d8f;      /* Active tab color */
+  --color-accent: #ff8c42;           /* Argo orange accent */
+  --color-text-muted: #808080;
+  --color-tab-active: #ff8c42;      /* Argo orange for active tabs */
   
   /* Chart Colors */
-  --color-chart-axis: #000;          /* Chart axis borders */
-  --color-chart-grid: rgba(0, 0, 0, 0.1);  /* Chart grid lines */
+  --color-chart-axis: #1a1a1a;          /* Dark chart axis borders */
+  --color-chart-grid: rgba(255, 140, 66, 0.15);  /* Orange-tinted grid lines */
   
   /* Plot Colors - Light Mode (vibrant, saturated for white background) */
   --color-plot-1: rgb(231, 76, 60);    /* strong red */
@@ -39,51 +39,51 @@
   --color-plot-4: rgb(230, 126, 34);   /* vivid orange */
   --color-plot-5: rgb(155, 89, 182);   /* rich purple */
   --color-plot-6: rgb(241, 196, 15);   /* golden yellow */
-  --color-plot-total: rgb(0, 0, 0);    /* black for total curve */
+  --color-plot-total: rgb(255, 140, 66);    /* Argo orange for total curve */
 }
 
 /* ===========================
-   COLOR SYSTEM - DARK MODE
+   COLOR SYSTEM - DARK MODE (Industrial Theme)
    =========================== */
 body.dark-mode {
   /* Text Colors */
-  --color-text-primary: #ffffff;     /* Main text, names, labels */
-  --color-text-values: #d3d3d3;      /* Values and units */
+  --color-text-primary: #e8e8e8;     /* Light gray text */
+  --color-text-values: #c0c0c0;      /* Silver/gray for values */
   
   /* Background Colors */
-  --color-bg-main: #1a1a1a;          /* Main background */
-  --color-bg-card: #1b1b1b;          /* Cards (laserheads, modules) */
-  --color-bg-highlight: #2e2e2e;        /* Sub-elements like module slots */
-  --color-bg-selected-laserhead: #2e2e2e;  /* Selected laserhead container */
+  --color-bg-main: #0d0d0d;          /* Very dark background (almost black) */
+  --color-bg-card: #1a1a1a;          /* Dark card background */
+  --color-bg-highlight: #242424;     /* Slightly lighter for contrast */
+  --color-bg-selected-laserhead: #2d2d2d;  /* Selected laserhead container */
   
   /* Hover Colors - Dark mode: lighter on hover */
-  --color-hover-brightness: 1.2;     /* Multiply by 1.2 to lighten */
+  --color-hover-brightness: 1.15;    /* Multiply by 1.15 to lighten */
   
-  /* Button Colors */
-  --color-btn-add: #1a6d2d;          /* Add buttons */
-  --color-btn-replace: #744111;      /* Replace buttons */
-  --color-btn-delete: #a72a2a;       /* Delete/Remove buttons */
-  --color-btn-default: #333;         /* Default buttons */
+  /* Button Colors - Industrial steel tones */
+  --color-btn-add: #8f491e;          /* Dark teal/green for add */
+  --color-btn-replace: #5a4a2d;      /* Dark bronze for replace */
+  --color-btn-delete: #5a2d2d;       /* Dark red for delete */
+  --color-btn-default: #3a3a3a;      /* Dark gray for default */
   
   /* UI Colors */
-  --color-border: #444;
-  --color-border-light: #444;
-  --color-accent: #607a96;
-  --color-text-muted: #ffffff;
-  --color-tab-active: #1a6d2d;       /* Active tab color */
+  --color-border: #3a3a3a;           /* Dark gray borders */
+  --color-border-light: #4a4a4a;     /* Slightly lighter borders */
+  --color-accent: #ff8c42;           /* Argo orange accent */
+  --color-text-muted: #808080;       /* Medium gray for muted text */
+  --color-tab-active: #ff8c42;       /* Argo orange for active tabs */
   
   /* Chart Colors */
-  --color-chart-axis: #afafaf;       /* Chart axis borders */
-  --color-chart-grid: rgba(218, 255, 55, 0.1);  /* Chart grid lines */
+  --color-chart-axis: #ff8c42;       /* Orange axis borders */
+  --color-chart-grid: rgba(255, 140, 66, 0.12);  /* Orange-tinted grid lines */
   
-  /* Plot Colors - Dark Mode (lighter, more pastel for dark background) */
-  --color-plot-1: rgb(255, 120, 110);  /* lighter red */
-  --color-plot-2: rgb(100, 180, 255);  /* lighter blue */
-  --color-plot-3: rgb(100, 230, 160);  /* lighter green */
-  --color-plot-4: rgb(255, 170, 100);  /* lighter orange */
-  --color-plot-5: rgb(200, 140, 220);  /* lighter purple */
-  --color-plot-6: rgb(255, 220, 100);  /* lighter yellow */
-  --color-plot-total: rgb(255, 255, 255); /* white for total curve */
+  /* Plot Colors - Industrial (vibrant but with metallic tones) */
+  --color-plot-1: rgb(220, 100, 100);   /* Muted red */
+  --color-plot-2: rgb(100, 170, 230);   /* Steel blue */
+  --color-plot-3: rgb(100, 200, 150);   /* Teal green */
+  --color-plot-4: rgb(230, 160, 80);    /* Bronze/copper */
+  --color-plot-5: rgb(180, 140, 220);   /* Muted purple */
+  --color-plot-6: rgb(220, 200, 100);   /* Muted gold */
+  --color-plot-total: rgb(200, 200, 200); /* Light gray for total curve */
 }
 
 body {
@@ -329,6 +329,7 @@ button:hover {
   flex-wrap: wrap;
   gap: 15px;
   margin-top: 15px;
+  align-items: stretch;
 }
 
 /* ===========================
@@ -540,6 +541,9 @@ button:hover {
   background-color: var(--color-bg-selected-laserhead);
   width: fit-content;
   max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .selected-laserhead .laserhead-info {
@@ -903,4 +907,111 @@ td:first-child {
   max-width: 350px;
   margin: 5px;
   box-sizing: border-box;
+}
+
+/* ===========================
+   ABOUT TAB
+   =========================== */
+.about-content {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+  color: var(--color-text-primary);
+}
+
+.about-section {
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.about-section:last-of-type {
+  border-bottom: none;
+}
+
+.about-section h3 {
+  color: var(--color-accent);
+  font-size: 20px;
+  margin-top: 0;
+  margin-bottom: 15px;
+}
+
+.about-section p {
+  line-height: 1.6;
+  margin: 10px 0;
+  color: var(--color-text-primary);
+}
+
+.about-section ul {
+  margin: 10px 0;
+  padding-left: 25px;
+}
+
+.about-section li {
+  margin: 8px 0;
+  line-height: 1.6;
+  color: var(--color-text-primary);
+}
+
+.about-section strong {
+  color: var(--color-accent);
+}
+
+.about-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 2px solid var(--color-accent);
+  flex-wrap: wrap;
+}
+
+.footer-dev, .footer-powered {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: bold;
+  color: var(--color-text-primary);
+}
+
+.about-footer a {
+  display: flex;
+  align-items: center;
+  height: 50px;
+}
+
+.about-footer p {
+  margin: 0;
+  font-weight: bold;
+  color: var(--color-text-primary);
+}
+
+.uex-logo {
+  height: 40px;
+  width: auto;
+  max-width: 120px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  transition: filter 0.3s ease;
+  object-fit: contain;
+  display: block;
+}
+
+.uex-logo:hover {
+  filter: drop-shadow(0 4px 8px rgba(255, 140, 66, 0.3));
+}
+
+.rosenrudel-logo {
+  height: 40px;
+  width: auto;
+  max-width: 60px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  transition: filter 0.3s ease;
+  object-fit: contain;
+  display: block;
+}
+
+.rosenrudel-logo:hover {
+  filter: drop-shadow(0 4px 8px rgba(255, 140, 66, 0.3));
 }

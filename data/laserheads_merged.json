@@ -82,6 +82,18 @@
         "date_modified": 1745183931
       },
       {
+        "attribute_name": "Minimum Laser Power",
+        "value": "900",
+        "unit": "MW",
+        "id_item": 107
+      },
+      {
+        "attribute_name": "Maximum Laser Power",
+        "value": "3600",
+        "unit": "MW",
+        "id_item": 107
+      },
+      {
         "id": 256,
         "id_item": 107,
         "id_category": 29,
@@ -374,6 +386,18 @@
         "unit": "",
         "date_added": 1713633692,
         "date_modified": 1745183922
+      },
+      {
+        "attribute_name": "Minimum Laser Power",
+        "value": "189",
+        "unit": "MW",
+        "id_item": 108
+      },
+      {
+        "attribute_name": "Maximum Laser Power",
+        "value": "1890",
+        "unit": "MW",
+        "id_item": 108
       },
       {
         "id": 266,
@@ -670,6 +694,18 @@
         "date_modified": 1745183926
       },
       {
+        "attribute_name": "Minimum Laser Power",
+        "value": "105",
+        "unit": "MW",
+        "id_item": 109
+      },
+      {
+        "attribute_name": "Maximum Laser Power",
+        "value": "2100",
+        "unit": "MW",
+        "id_item": 109
+      },
+      {
         "id": 12719,
         "id_item": 109,
         "id_category": 29,
@@ -962,6 +998,18 @@
         "unit": "",
         "date_added": 1713633692,
         "date_modified": 1745121511
+      },
+      {
+        "attribute_name": "Minimum Laser Power",
+        "value": "378",
+        "unit": "MW",
+        "id_item": 110
+      },
+      {
+        "attribute_name": "Maximum Laser Power",
+        "value": "2220",
+        "unit": "MW",
+        "id_item": 110
       },
       {
         "id": 276,
@@ -1258,6 +1306,18 @@
         "date_modified": 1745121563
       },
       {
+        "attribute_name": "Minimum Laser Power",
+        "value": "720",
+        "unit": "MW",
+        "id_item": 111
+      },
+      {
+        "attribute_name": "Maximum Laser Power",
+        "value": "3600",
+        "unit": "MW",
+        "id_item": 111
+      },
+      {
         "id": 285,
         "id_item": 111,
         "id_category": 29,
@@ -1550,6 +1610,18 @@
         "unit": "",
         "date_added": 1713633692,
         "date_modified": 1745183928
+      },
+      {
+        "attribute_name": "Minimum Laser Power",
+        "value": "420",
+        "unit": "MW",
+        "id_item": 112
+      },
+      {
+        "attribute_name": "Maximum Laser Power",
+        "value": "2100",
+        "unit": "MW",
+        "id_item": 112
       },
       {
         "id": 295,
@@ -1846,6 +1918,18 @@
         "date_modified": 1745183930
       },
       {
+        "attribute_name": "Minimum Laser Power",
+        "value": "840",
+        "unit": "MW",
+        "id_item": 113
+      },
+      {
+        "attribute_name": "Maximum Laser Power",
+        "value": "3360",
+        "unit": "MW",
+        "id_item": 113
+      },
+      {
         "id": 12705,
         "id_item": 113,
         "id_category": 29,
@@ -2138,6 +2222,18 @@
         "unit": "",
         "date_added": 1713633692,
         "date_modified": 1745121414
+      },
+      {
+        "attribute_name": "Minimum Laser Power",
+        "value": "630",
+        "unit": "MW",
+        "id_item": 114
+      },
+      {
+        "attribute_name": "Maximum Laser Power",
+        "value": "3150",
+        "unit": "MW",
+        "id_item": 114
       },
       {
         "id": 306,
@@ -2434,6 +2530,18 @@
         "date_modified": 1745121434
       },
       {
+        "attribute_name": "Minimum Laser Power",
+        "value": "1020",
+        "unit": "MW",
+        "id_item": 115
+      },
+      {
+        "attribute_name": "Maximum Laser Power",
+        "value": "4080",
+        "unit": "MW",
+        "id_item": 115
+      },
+      {
         "id": 315,
         "id_item": 115,
         "id_category": 29,
@@ -2726,6 +2834,18 @@
         "unit": "",
         "date_added": 1713633709,
         "date_modified": 1745121546
+      },
+      {
+        "attribute_name": "Minimum Laser Power",
+        "value": "504",
+        "unit": "MW",
+        "id_item": 797
+      },
+      {
+        "attribute_name": "Maximum Laser Power",
+        "value": "2520",
+        "unit": "MW",
+        "id_item": 797
       },
       {
         "id": 2112,
@@ -3022,6 +3142,18 @@
         "date_modified": 1745183924
       },
       {
+        "attribute_name": "Minimum Laser Power",
+        "value": "480",
+        "unit": "MW",
+        "id_item": 798
+      },
+      {
+        "attribute_name": "Maximum Laser Power",
+        "value": "2400",
+        "unit": "MW",
+        "id_item": 798
+      },
+      {
         "id": 2122,
         "id_item": 798,
         "id_category": 29,
@@ -3314,6 +3446,18 @@
         "unit": "",
         "date_added": 1713633710,
         "date_modified": 1745121470
+      },
+      {
+        "attribute_name": "Minimum Laser Power",
+        "value": "336",
+        "unit": "MW",
+        "id_item": 799
+      },
+      {
+        "attribute_name": "Maximum Laser Power",
+        "value": "3360",
+        "unit": "MW",
+        "id_item": 799
       },
       {
         "id": 2132,
@@ -3944,6 +4088,18 @@
         "unit": "",
         "date_added": 1741662174,
         "date_modified": 1745161955
+      },
+      {
+        "attribute_name": "Minimum Laser Power",
+        "value": "0.15",
+        "unit": "MW",
+        "id_item": 4361
+      },
+      {
+        "attribute_name": "Maximum Laser Power",
+        "value": "1",
+        "unit": "MW",
+        "id_item": 4361
       },
       {
         "id": 15542,
@@ -4854,6 +5010,18 @@
         "unit": "",
         "date_added": 1742463235,
         "date_modified": 1743110440
+      },
+      {
+        "attribute_name": "Minimum Laser Power",
+        "value": "630",
+        "unit": "MW",
+        "id_item": 4397
+      },
+      {
+        "attribute_name": "Maximum Laser Power",
+        "value": "3150",
+        "unit": "MW",
+        "id_item": 4397
       },
       {
         "id": 15718,

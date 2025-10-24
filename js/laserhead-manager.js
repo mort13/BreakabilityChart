@@ -99,13 +99,11 @@ function processAttribute(attr, ignoreAttributeFilter = false, modules = []) {
         let finalValue = parseFloat(baseValue);
         
         if (moduleModifiers.length > 0 && (attrName === "Maximum Laser Power" || attrName === "Minimum Laser Power")) {
-            // Apply Mining Laser Power module modifiers using factor = value/100
+            // Apply Mining Laser Power module modifiers using factor = value/100 for both active and passive modules
             moduleModifiers.forEach((modValue, index) => {
                 const module = modules[index];
-                const isActive = module?.attributes?.some(a => 
-                    a.attribute_name === "Item Type" && a.value === "Active"
-                );
-                if (isActive && module?.isActive !== false) {
+                // Apply for both active and passive modules
+                if (module) {
                     const modFactor = modValue / 100;
                     finalValue *= modFactor;
                 }

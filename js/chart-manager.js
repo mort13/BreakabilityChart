@@ -555,28 +555,29 @@ function computeCurve(P, r_mod) {
 function calculateTotalPower(laserhead, modules, useMax = true) {
     // Get the appropriate power attribute (Minimum or Maximum)
     const powerAttrName = useMax ? "Maximum Laser Power" : "Minimum Laser Power";
-    const powerAttr = laserhead.attributes.find(attr => 
-        attr.attribute_name === powerAttrName
-    );
-    
-    if (!powerAttr) {
-        return 0;
+    let baseAttr = laserhead.attributes.find(attr => attr.attribute_name === powerAttrName);
+    let baseValue = baseAttr ? parseFloat(baseAttr.value) : 0;
+    let unit = baseAttr ? getUnit(baseAttr) || 'MW' : 'MW';
+
+    // Collect all module modifiers (active and passive) for Mining Laser Power
+    let moduleModifiers = modules
+        .filter(m => m && m.attributes)
+        .map(m => m.attributes.find(a => a.attribute_name === "Mining Laser Power"))
+        .filter(a => a && a.value)
+        .map(a => parseFloat(a.value));
+
+    // Apply all module modifiers using factor = value/100
+    moduleModifiers.forEach(modValue => {
+        baseValue *= (modValue / 100);
+    });
+
+    // Round as in laserhead-manager.js
+    baseValue = Math.round(baseValue * 100) / 100;
+    if (baseValue % 1 === 0) {
+        baseValue = Math.round(baseValue);
     }
 
-    // Use the value directly (no need to parse ranges anymore)
-    let result = powerAttr.value;
-    const unit = getUnit(powerAttr) || 'MW';
-    
-    modules.forEach(module => {
-        const powerMod = module.attributes.find(attr => 
-            attr.attribute_name === powerAttrName
-        );
-        if (powerMod) {
-            result = calculateCombinedValue(result, powerMod.value, unit, module.isActive !== false, powerAttrName);
-        }
-    });
-    
-    return parseFloat(result);
+    return baseValue;
 }
 
 function calculateResistanceModifier(laserhead, modules, gadget = null) {

@@ -46,16 +46,31 @@ function setupSizeFilters() {
 function processAttribute(attr, ignoreAttributeFilter = false, modules = []) {
     // Get module modifiers for this attribute name
     const attrName = attr ? attr.attribute_name : '';
-    const moduleModifiers = modules
-        .filter(m => m && m.attributes)
-        .map(m => m.attributes.find(a => a.attribute_name === attrName))
-        .filter(a => a && a.value)
-        .map(a => parseFloat(a.value));
+    let moduleModifiers = [];
+    // Special handling for Maximum/minimum Laser Power
+    if (attrName === "Maximum Laser Power" || attrName === "Minimum Laser Power") {
+        moduleModifiers = modules
+            .filter(m => m && m.attributes)
+            .map(m => m.attributes.find(a => a.attribute_name === "Mining Laser Power"))
+            .filter(a => a && a.value)
+            .map(a => parseFloat(a.value));
+    } else {
+        moduleModifiers = modules
+            .filter(m => m && m.attributes)
+            .map(m => m.attributes.find(a => a.attribute_name === attrName))
+            .filter(a => a && a.value)
+            .map(a => parseFloat(a.value));
+    }
 
     if (!attr && moduleModifiers.length > 0) {
         // Laser doesn't have this attribute, but a module modifies it
         // Create a synthetic attribute with base value of 0 (factor of 1)
-        const moduleAttr = modules[0].attributes.find(a => a.attribute_name === attrName);
+        let moduleAttr;
+        if (attrName === "Maximum Laser Power" || attrName === "Minimum Laser Power") {
+            moduleAttr = modules[0].attributes.find(a => a.attribute_name === "Mining Laser Power");
+        } else {
+            moduleAttr = modules[0].attributes.find(a => a.attribute_name === attrName);
+        }
         if (moduleAttr) {
             attr = {
                 attribute_name: attrName,
@@ -83,9 +98,24 @@ function processAttribute(attr, ignoreAttributeFilter = false, modules = []) {
     function formatValue(baseValue) {
         let finalValue = parseFloat(baseValue);
         
-        if (moduleModifiers.length > 0 && unit === '%') {
+        if (moduleModifiers.length > 0 && (attrName === "Maximum Laser Power" || attrName === "Minimum Laser Power")) {
+            // Apply Mining Laser Power module modifiers using factor = value/100
+            moduleModifiers.forEach((modValue, index) => {
+                const module = modules[index];
+                const isActive = module?.attributes?.some(a => 
+                    a.attribute_name === "Item Type" && a.value === "Active"
+                );
+                if (isActive && module?.isActive !== false) {
+                    const modFactor = modValue / 100;
+                    finalValue *= modFactor;
+                }
+            });
+            finalValue = Math.round(finalValue * 100) / 100;
+            if (finalValue % 1 === 0) {
+                finalValue = Math.round(finalValue);
+            }
+        } else if (moduleModifiers.length > 0 && unit === '%') {
             let factor = 1 + (finalValue / 100); // Convert base value to factor
-            
             // Apply each module's modifier only if it's active and not disabled
             moduleModifiers.forEach((modValue, index) => {
                 const module = modules[index];
@@ -97,11 +127,9 @@ function processAttribute(attr, ignoreAttributeFilter = false, modules = []) {
                     factor *= modFactor; // Multiply factors
                 }
             });
-            
             // Convert final factor back to percentage
             finalValue = (factor - 1) * 100;
             finalValue = Math.round(finalValue * 100) / 100;
-            
             // Remove decimal point if whole number
             if (finalValue % 1 === 0) {
                 finalValue = Math.round(finalValue);

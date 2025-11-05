@@ -313,8 +313,8 @@ export function updateBreakabilityChart() {
                     // Check if this laser's dataset is visible
                     const isVisible = !chart.data.datasets[i * 2].hidden;
                     if (isVisible) {
-                        totalMaxMass += maxPowers[i] / ((1 + (R/100) * resistanceModifiers[i]) * 0.2);
-                        totalMinMass += minPowers[i] / ((1 + (R/100) * resistanceModifiers[i]) * 0.2);
+                        totalMaxMass += maxPowers[i] / ((1 + (R/100) * resistanceModifiers[i]) * 0.182);
+                        totalMinMass += minPowers[i] / ((1 + (R/100) * resistanceModifiers[i]) * 0.182);
                     }
                 }
                 
@@ -403,8 +403,8 @@ export function updateBreakabilityChart() {
                                        (!isVisible && isThisGroup && !willHide);
                     
                     if (shouldInclude) {
-                        totalMaxMass += maxPowers[i] / ((1 + (R/100) * resistanceModifiers[i]) * 0.2);
-                        totalMinMass += minPowers[i] / ((1 + (R/100) * resistanceModifiers[i]) * 0.2);
+                        totalMaxMass += maxPowers[i] / ((1 + (R/100) * resistanceModifiers[i]) * 0.182);
+                        totalMinMass += minPowers[i] / ((1 + (R/100) * resistanceModifiers[i]) * 0.182);
                     }
                 }
                 
@@ -547,7 +547,7 @@ function addLaserDataset(laserhead, modules, index) {
 function computeCurve(P, r_mod) {
     const data = [];
     for (let R = 0; R <= 100; R += 0.1) {
-        data.push({ x: R, y: P / ((1 + (R/100) * r_mod) * 0.2) });
+        data.push({ x: R, y: P / ((1 + (R/100) * r_mod) * 0.182) });
     }
     return data;
 }

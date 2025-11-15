@@ -1845,10 +1845,10 @@
       "item_name": "Hofstede-S2 Mining Laser",
       "item_uuid": "b422bcf8-b553-4b09-b2be-e92ab2f80e9a",
       "attribute_name": "Optimal Charge Window Size",
-      "value": "",
-      "unit": "",
+      "value": "60",
+      "unit": "%",
       "date_added": 0,
-      "date_modified": 1745121470
+      "date_modified": 1762732865
     },
     {
       "id": 15522,
@@ -1999,10 +1999,10 @@
       "item_name": "Arbor MHV Mining Laser",
       "item_uuid": "0982203d-579f-4c3c-8b7a-c5f1c4a7ddd6",
       "attribute_name": "Size",
-      "value": "",
+      "value": "S0",
       "unit": "",
       "date_added": 1741661715,
-      "date_modified": 1745121367
+      "date_modified": 1760806862
     },
     {
       "id": 15533,
@@ -2209,10 +2209,10 @@
       "item_name": "S0 Helix",
       "item_uuid": "8c95c978-9e47-46ec-88e3-a0662c13d76a",
       "attribute_name": "Size",
-      "value": "",
+      "value": "S0",
       "unit": "",
       "date_added": 1741662174,
-      "date_modified": 1745161955
+      "date_modified": 1760806862
     },
     {
       "id": 15548,
@@ -2461,10 +2461,10 @@
       "item_name": "S00 Hofstede",
       "item_uuid": "1c2bab01-941b-4515-a6a4-5845aaa95696",
       "attribute_name": "Size",
-      "value": "0",
+      "value": "S0",
       "unit": "",
       "date_added": 1741662689,
-      "date_modified": 1745441814
+      "date_modified": 1760806862
     },
     {
       "id": 15566,
@@ -3623,10 +3623,10 @@
       "item_name": "Lawson Mining Laser",
       "item_uuid": "40bd6a85-5695-409c-9d6c-ae1babde416a",
       "attribute_name": "Size",
-      "value": "",
+      "value": "S0",
       "unit": "",
       "date_added": 1743110436,
-      "date_modified": 1745121647
+      "date_modified": 1760806862
     },
     {
       "id": 15819,

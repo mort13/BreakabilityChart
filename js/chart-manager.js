@@ -1,5 +1,6 @@
-import { miningData, calculateCombinedValue, getUnit, cleanLaserName } from './data-manager.js';
+import { miningData, cleanLaserName } from './data-manager.js';
 import { selectedLaserheads } from './laserhead-manager.js';
+import { calculateTotalPower, calculateResistanceModifier, computeCurve } from './calculations.js';
 
 let chart = null;
 let marker = null;
@@ -222,22 +223,23 @@ export function updateBreakabilityChart() {
     }
     
     // Remove datasets for laserheads that no longer exist
-    // Keep datasets whose index is less than the number of selected laserheads
-    const laserDatasets = chart.data.datasets.filter(ds => 
-        ds.label !== "Marker" && ds.group !== 'total'
-    );
+    // Build a set of valid group IDs based on current laserheads
+    const validGroups = new Set();
+    selectedLaserheads.forEach((laserhead, i) => {
+        const laserLabel = laserhead.customName || cleanLaserName(laserhead.name);
+        const groupId = `laser_${i}_${laserLabel}`;
+        validGroups.add(groupId);
+    });
     
-    // Remove excess datasets (when a laserhead was deleted)
-    while (laserDatasets.length > selectedLaserheads.length * 2) {
-        // Find and remove the last laser dataset
-        for (let i = chart.data.datasets.length - 1; i >= 0; i--) {
-            const ds = chart.data.datasets[i];
-            if (ds.label !== "Marker" && ds.group !== 'total') {
-                chart.data.datasets.splice(i, 1);
-                break;
-            }
+    // Remove datasets that don't have a valid group
+    chart.data.datasets = chart.data.datasets.filter(ds => {
+        // Keep marker and total datasets
+        if (ds.label === "Marker" || ds.group === 'total') {
+            return true;
         }
-    }
+        // Keep laser datasets that are in the valid groups
+        return ds.group && validGroups.has(ds.group);
+    });
 
     // Arrays to store individual laser data for totals
     let maxPowers = [];
@@ -264,7 +266,7 @@ export function updateBreakabilityChart() {
         addLaserDataset(laserhead, activeModules, i);
     }
     
-    // Add total curves if there's more than one laser
+    // Handle total curves - update if exists, remove if only one laser left
     if (selectedLaserheads.length > 1) {
         // Function to update total curves
         const updateTotalCurves = () => {
@@ -310,8 +312,17 @@ export function updateBreakabilityChart() {
                 
                 // Only include visible lasers in the total
                 for (let i = 0; i < maxPowers.length; i++) {
-                    // Check if this laser's dataset is visible
-                    const isVisible = !chart.data.datasets[i * 2].hidden;
+                    // Safety check - ensure laserhead exists
+                    if (i >= selectedLaserheads.length) continue;
+                    
+                    // Find the dataset for this laser by group ID
+                    const laserhead = selectedLaserheads[i];
+                    const laserLabel = laserhead.customName || cleanLaserName(laserhead.name);
+                    const groupId = `laser_${i}_${laserLabel}`;
+                    const laserDataset = chart.data.datasets.find(ds => ds.group === groupId && !ds.label.endsWith('_min'));
+                    
+                    // Check if this laser's dataset exists and is visible
+                    const isVisible = laserDataset && !laserDataset.hidden;
                     if (isVisible) {
                         totalMaxMass += maxPowers[i] / ((1 + (R/100) * resistanceModifiers[i]) * 0.182);
                         totalMinMass += minPowers[i] / ((1 + (R/100) * resistanceModifiers[i]) * 0.182);
@@ -333,7 +344,16 @@ export function updateBreakabilityChart() {
             }
 
             // If no visible lasers, animate to -5
-            const hasVisibleLasers = maxPowers.some((_, i) => !chart.data.datasets[i * 2].hidden);
+            const hasVisibleLasers = maxPowers.some((_, i) => {
+                // Safety check - ensure laserhead exists
+                if (i >= selectedLaserheads.length) return false;
+                
+                const laserhead = selectedLaserheads[i];
+                const laserLabel = laserhead.customName || cleanLaserName(laserhead.name);
+                const groupId = `laser_${i}_${laserLabel}`;
+                const laserDataset = chart.data.datasets.find(ds => ds.group === groupId && !ds.label.endsWith('_min'));
+                return laserDataset && !laserDataset.hidden;
+            });
             if (!hasVisibleLasers) {
                 newTotalMaxData.forEach(point => point.y = -5);
                 newTotalMinData.forEach(point => point.y = -5);
@@ -365,7 +385,44 @@ export function updateBreakabilityChart() {
             const group = legend.chart.data.datasets[index].group;
             const willHide = !legend.chart.data.datasets[index].hidden;
             
-            if (group === 'total') return; // Don't process total clicks
+            // Handle total clicks - toggle both total datasets
+            if (group === 'total') {
+                legend.chart.data.datasets.forEach(dataset => {
+                    if (dataset.group === 'total') {
+                        if (willHide) {
+                            if (!dataset._originalData) {
+                                dataset._originalData = [...dataset.data];
+                            }
+                            dataset.data = dataset.data.map(point => ({ x: point.x, y: -5 }));
+                            dataset._animatingToZero = true;
+                        } else {
+                            if (dataset._originalData) {
+                                dataset.hidden = false;
+                                dataset.data = [...dataset._originalData];
+                                delete dataset._originalData;
+                            }
+                        }
+                    }
+                });
+                
+                chart.update({
+                    duration: 800,
+                    easing: 'easeInOutQuart'
+                });
+                
+                if (willHide) {
+                    setTimeout(() => {
+                        legend.chart.data.datasets.forEach(dataset => {
+                            if (dataset.group === 'total' && dataset._animatingToZero) {
+                                dataset.hidden = true;
+                                delete dataset._animatingToZero;
+                            }
+                        });
+                        chart.update(0);
+                    }, 800);
+                }
+                return;
+            }
 
             // Update both individual curves and totals simultaneously
             legend.chart.data.datasets.forEach(dataset => {
@@ -395,10 +452,21 @@ export function updateBreakabilityChart() {
                 let totalMinMass = 0;
                 
                 for (let i = 0; i < maxPowers.length; i++) {
+                    // Safety check - ensure laserhead exists
+                    if (i >= selectedLaserheads.length) continue;
+                    
+                    // Find the dataset for this laser by group ID
+                    const laserhead = selectedLaserheads[i];
+                    const laserLabel = laserhead.customName || cleanLaserName(laserhead.name);
+                    const groupId = `laser_${i}_${laserLabel}`;
+                    const laserDataset = chart.data.datasets.find(ds => ds.group === groupId && !ds.label.endsWith('_min'));
+                    
+                    if (!laserDataset) continue;
+                    
                     // Include a laser if it's currently visible and not being hidden,
                     // or currently hidden and being shown
-                    const isVisible = !chart.data.datasets[i * 2].hidden;
-                    const isThisGroup = chart.data.datasets[i * 2].group === group;
+                    const isVisible = !laserDataset.hidden;
+                    const isThisGroup = laserDataset.group === group;
                     const shouldInclude = (isVisible && (!isThisGroup || !willHide)) || 
                                        (!isVisible && isThisGroup && !willHide);
                     
@@ -438,6 +506,9 @@ export function updateBreakabilityChart() {
                 }, 800);
             }
         };
+    } else if (selectedLaserheads.length === 1) {
+        // Remove total curves if only one laser left
+        chart.data.datasets = chart.data.datasets.filter(ds => ds.group !== 'total');
     }
     
     chart.update();
@@ -544,92 +615,7 @@ function addLaserDataset(laserhead, modules, index) {
     }
 }
 
-function computeCurve(P, r_mod) {
-    const data = [];
-    for (let R = 0; R <= 100; R += 0.1) {
-        data.push({ x: R, y: P / ((1 + (R/100) * r_mod) * 0.182) });
-    }
-    return data;
-}
-
-function calculateTotalPower(laserhead, modules, useMax = true) {
-    // Get the appropriate power attribute (Minimum or Maximum)
-    const powerAttrName = useMax ? "Maximum Laser Power" : "Minimum Laser Power";
-    let baseAttr = laserhead.attributes.find(attr => attr.attribute_name === powerAttrName);
-    let baseValue = baseAttr ? parseFloat(baseAttr.value) : 0;
-    let unit = baseAttr ? getUnit(baseAttr) || 'MW' : 'MW';
-
-    // Collect all module modifiers (active and passive) for Mining Laser Power
-    let moduleModifiers = modules
-        .filter(m => m && m.attributes)
-        .map(m => m.attributes.find(a => a.attribute_name === "Mining Laser Power"))
-        .filter(a => a && a.value)
-        .map(a => parseFloat(a.value));
-
-    // Apply all module modifiers using factor = value/100
-    moduleModifiers.forEach(modValue => {
-        baseValue *= (modValue / 100);
-    });
-
-    // Round as in laserhead-manager.js
-    baseValue = Math.round(baseValue * 100) / 100;
-    if (baseValue % 1 === 0) {
-        baseValue = Math.round(baseValue);
-    }
-
-    return baseValue;
-}
-
-function calculateResistanceModifier(laserhead, modules, gadget = null) {
-    // Get base resistance attribute or create virtual one with 0%
-    let resistanceAttr = laserhead.attributes.find(attr => 
-        attr.attribute_name === "Resistance"
-    );
-    
-    // Check if any modules have resistance modifiers
-    const hasResistanceModules = modules.some(m => 
-        m.attributes?.some(a => a.attribute_name === "Resistance")
-    );
-    
-    // If no base resistance but modules have it, start from 0%
-    if (!resistanceAttr && hasResistanceModules) {
-        resistanceAttr = {
-            attribute_name: "Resistance",
-            value: "0",
-            unit: "%"
-        };
-    } else if (!resistanceAttr) {
-        return 1;
-    }
-    
-    // Start with base resistance value
-    let resistance = parseFloat(resistanceAttr.value) || 0;
-    const unit = getUnit(resistanceAttr) || '%';
-    
-    // Apply module modifiers
-    modules.forEach(module => {
-        const resMod = module.attributes.find(attr => 
-            attr.attribute_name === "Resistance"
-        );
-        if (resMod) {
-            resistance = parseFloat(calculateCombinedValue(resistance.toString(), resMod.value, unit, module.isActive !== false, "Resistance"));
-        }
-    });
-
-    // Apply gadget modifier if present
-    if (gadget && gadget.attributes) {
-        const gadgetResMod = gadget.attributes.find(attr => 
-            attr.attribute_name === "Resistance" && attr.value
-        );
-        if (gadgetResMod) {
-            resistance = parseFloat(calculateCombinedValue(resistance.toString(), gadgetResMod.value, unit, true, "Resistance"));
-        }
-    }
-    
-    // Convert final percentage to multiplier (e.g., 25% -> 1.25)
-    const finalMultiplier = 1 + (resistance / 100);
-    return finalMultiplier;
-}
+// Calculation functions are now in calculations.js
 
 function getColor(index) {
     // Get colors from CSS variables (different for light/dark mode)

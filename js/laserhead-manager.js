@@ -3,12 +3,20 @@ import {
     ATTRIBUTE_ORDER_NAMES, 
     MODULE_ATTRIBUTE_ORDER,
     MODULE_DISPLAY_ATTRIBUTES,
-    calculateCombinedValue, 
     getUnit, 
     cleanLaserName 
 } from './data-manager.js';
 import { updateBreakabilityChart } from './chart-manager.js';
 import { isActiveModule } from './module-manager.js';
+import { calculateAttributeValue, createSyntheticAttribute } from './calculations.js';
+import { 
+    generateLaserheadCardHTML,
+    generateAttributeRow,
+    generateFilledModuleSlotHTML,
+    generateEmptyModuleSlotHTML,
+    generateModuleAttributeRows,
+    generateSelectedLaserheadHTML
+} from './html-generators.js';
 
 let currentLaserheadIndex = null;
 let filteredLaserheads = [];
@@ -44,42 +52,13 @@ function setupSizeFilters() {
 
 // Process attributes for display
 function processAttribute(attr, ignoreAttributeFilter = false, modules = []) {
-    // Get module modifiers for this attribute name
     const attrName = attr ? attr.attribute_name : '';
-    let moduleModifiers = [];
-    // Special handling for Maximum/minimum Laser Power
-    if (attrName === "Maximum Laser Power" || attrName === "Minimum Laser Power") {
-        moduleModifiers = modules
-            .filter(m => m && m.attributes)
-            .map(m => m.attributes.find(a => a.attribute_name === "Mining Laser Power"))
-            .filter(a => a && a.value)
-            .map(a => parseFloat(a.value));
-    } else {
-        moduleModifiers = modules
-            .filter(m => m && m.attributes)
-            .map(m => m.attributes.find(a => a.attribute_name === attrName))
-            .filter(a => a && a.value)
-            .map(a => parseFloat(a.value));
+    
+    // Create synthetic attribute if needed
+    if (!attr) {
+        attr = createSyntheticAttribute(attrName, modules);
     }
-
-    if (!attr && moduleModifiers.length > 0) {
-        // Laser doesn't have this attribute, but a module modifies it
-        // Create a synthetic attribute with base value of 0 (factor of 1)
-        let moduleAttr;
-        if (attrName === "Maximum Laser Power" || attrName === "Minimum Laser Power") {
-            moduleAttr = modules[0].attributes.find(a => a.attribute_name === "Mining Laser Power");
-        } else {
-            moduleAttr = modules[0].attributes.find(a => a.attribute_name === attrName);
-        }
-        if (moduleAttr) {
-            attr = {
-                attribute_name: attrName,
-                value: "0",  // Base value of 0 (factor of 1) when laser doesn't have attribute
-                unit: moduleAttr.unit
-            };
-        }
-    }
-
+    
     if(!attr || !attr.value) return [];
     
     // Check if attribute is valid and should be displayed
@@ -92,62 +71,15 @@ function processAttribute(attr, ignoreAttributeFilter = false, modules = []) {
         return [];
     }
 
-    const val = attr.value.trim();
     const unit = getUnit(attr);
-
-    function formatValue(baseValue) {
-        let finalValue = parseFloat(baseValue);
-        
-        if (moduleModifiers.length > 0 && (attrName === "Maximum Laser Power" || attrName === "Minimum Laser Power")) {
-            // Apply Mining Laser Power module modifiers using factor = value/100 for both active and passive modules
-            moduleModifiers.forEach((modValue, index) => {
-                const module = modules[index];
-                // Apply for both active and passive modules
-                if (module) {
-                    const modFactor = modValue / 100;
-                    finalValue *= modFactor;
-                }
-            });
-            finalValue = Math.round(finalValue * 100) / 100;
-            if (finalValue % 1 === 0) {
-                finalValue = Math.round(finalValue);
-            }
-        } else if (moduleModifiers.length > 0 && unit === '%') {
-            let factor = 1 + (finalValue / 100); // Convert base value to factor
-            // Apply each module's modifier only if it's active and not disabled
-            moduleModifiers.forEach((modValue, index) => {
-                const module = modules[index];
-                const isActive = module?.attributes?.some(a => 
-                    a.attribute_name === "Item Type" && a.value === "Active"
-                );
-                if (isActive && module?.isActive !== false) {
-                    const modFactor = 1 + (modValue / 100); // Convert module value to factor
-                    factor *= modFactor; // Multiply factors
-                }
-            });
-            // Convert final factor back to percentage
-            finalValue = (factor - 1) * 100;
-            finalValue = Math.round(finalValue * 100) / 100;
-            // Remove decimal point if whole number
-            if (finalValue % 1 === 0) {
-                finalValue = Math.round(finalValue);
-            }
-        } else if (moduleModifiers.length > 0) {
-            // For non-percentage values, use the original calculation
-            moduleModifiers.forEach((modValue, index) => {
-                const moduleActive = modules[index]?.isActive !== false;
-                finalValue = calculateCombinedValue(finalValue, modValue, unit, moduleActive, attr.attribute_name);
-            });
-            finalValue = Math.round(finalValue * 100) / 100;
-            if (finalValue % 1 === 0) {
-                finalValue = Math.round(finalValue);
-            }
-        }
-        
-        return `<td class="value-number">${finalValue}</td><td class="value-unit">${unit}</td>`;
-    }
     
-    return [{ name: attr.attribute_name, value: formatValue(val) }];
+    // Calculate the final value using the calculations module
+    const finalValue = calculateAttributeValue(attr, modules);
+    
+    // Format for display
+    const formattedValue = `<td class="value-number">${finalValue}</td><td class="value-unit">${unit}</td>`;
+    
+    return [{ name: attr.attribute_name, value: formattedValue }];
 }
 
 function sortAttributes(attrs) {
@@ -217,7 +149,7 @@ export function renderLaserheadCards() {
             card.dataset.id = laserhead.id;
             
             // Generate card HTML
-            card.innerHTML = generateLaserheadCardHTML(laserhead);
+            card.innerHTML = buildLaserheadCardHTML(laserhead);
             
             // Add click handler
             card.addEventListener('click', () => {
@@ -228,7 +160,7 @@ export function renderLaserheadCards() {
         });
 }
 
-function generateLaserheadCardHTML(laserhead) {
+function buildLaserheadCardHTML(laserhead) {
     // Process attributes for display - show all attributes in selection cards
     const attrs = laserhead.attributes
         .map(attr => processAttribute(attr, true))
@@ -238,23 +170,7 @@ function generateLaserheadCardHTML(laserhead) {
     // Sort attributes in display order
     const sortedAttrs = sortAttributes(attrs);
 
-    // Generate table rows
-    const rows = sortedAttrs.map(attr => `
-        <tr>
-            <td class="attr-name">${attr.name}</td>
-            ${attr.value}
-        </tr>
-    `).join('');
-
-    return `
-        <div class="card-header">
-            <div class="size">S${laserhead.size || 1}</div>
-            <div class="name">${cleanLaserName(laserhead.name)}</div>
-        </div>
-        <table class="attributes-table">
-            <tbody>${rows}</tbody>
-        </table>
-    `;
+    return generateLaserheadCardHTML(laserhead, sortedAttrs);
 }
 
 function selectLaserhead(id) {
@@ -408,18 +324,16 @@ export function renderSelectedLaserheads() {
                     // AND it's in display options
                     if (!attrMap.has(modAttr.attribute_name) && modAttr.value && modAttr.value !== '0' && modAttr.value.trim() !== ''
                         && window.displayAttributes.includes(modAttr.attribute_name)) {
-                        // Create synthetic attribute as if laser has it with factor 1
-                        const syntheticAttr = {
-                            attribute_name: modAttr.attribute_name,
-                            value: "0",
-                            unit: modAttr.unit
-                        };
-                        const processedAttrs = processAttribute(syntheticAttr, false, [module]);
-                        processedAttrs.forEach(pa => {
-                            if (!attrMap.has(pa.name)) {
-                                attrMap.set(pa.name, pa);
-                            }
-                        });
+                        // Create synthetic attribute
+                        const syntheticAttr = createSyntheticAttribute(modAttr.attribute_name, [module]);
+                        if (syntheticAttr) {
+                            const processedAttrs = processAttribute(syntheticAttr, false, [module]);
+                            processedAttrs.forEach(pa => {
+                                if (!attrMap.has(pa.name)) {
+                                    attrMap.set(pa.name, pa);
+                                }
+                            });
+                        }
                     }
                 });
             }
@@ -428,24 +342,7 @@ export function renderSelectedLaserheads() {
         // Generate table rows with all attributes, filling in empty rows where needed
         const rows = sortedAllAttributes.map(attrName => {
             const attr = attrMap.get(attrName);
-            if (attr) {
-                // Attribute exists for this laserhead
-                return `
-                    <tr>
-                        <td>${attr.name}</td>
-                        ${attr.value}
-                    </tr>
-                `;
-            } else {
-                // Attribute doesn't exist for this laserhead - create empty row
-                return `
-                    <tr>
-                        <td>${attrName}</td>
-                        <td class="value-number">-</td>
-                        <td class="value-unit"></td>
-                    </tr>
-                `;
-            }
+            return generateAttributeRow(attrName, attr);
         }).join('');
 
         // Generate module slots with a section header
@@ -456,142 +353,30 @@ export function renderSelectedLaserheads() {
             ${Array(numModuleSlots).fill(null).map((_, i) => {
             const module = laserhead.modules[i];
             if (module) {
-                const moduleAttrs = MODULE_ATTRIBUTE_ORDER
-                    .filter(attrName => MODULE_DISPLAY_ATTRIBUTES.has(attrName))
-                    .map(attrName => {
-                        const attr = module.attributes?.find(a => a.attribute_name === attrName);
-                        if (!attr?.value || attr.value.trim() === '' || attr.value === '0') return '';
-                        
-                        let value = attr.value;
-                        const numValue = parseFloat(value);
-                        if (!isNaN(numValue)) {
-                            const rounded = Math.round(numValue * 100) / 100;
-                            value = rounded % 1 === 0 ? Math.round(rounded).toString() : rounded.toString();
-                        }
-                        
-                        const unit = attr.unit || '';
-                        return `<tr>
-                            <td>${attrName}</td>
-                            <td class="value-number">${value}</td>
-                            <td class="value-unit">${unit}</td>
-                        </tr>`;
-                    })
-                    .filter(row => row !== '')
-                    .join('');
-
-                const hasVisibleAttrs = moduleAttrs !== '';
-                return `
-                    <div class="module-slot filled">
-                        <div class="module-header">
-                            <div class="module-slot-info">
-                                <span class="module-name ${module.isActive === false ? 'inactive' : ''} ${isActiveModule(module) ? 'clickable' : ''}" ${isActiveModule(module) ? `onclick="toggleModule(${idx}, ${i})"` : ''}>${module.name || ''}</span>
-                            </div>
-                            <div class="module-actions">
-                                <button onclick="showModuleSelection(${idx}, ${i})" class="replace-btn">Replace</button>
-                                <button onclick="removeModule(${idx}, ${i})" class="remove-btn">×</button>
-                            </div>
-                        </div>
-                        ${hasVisibleAttrs ? `
-                            <table class="module-table ${module.isActive === false ? 'inactive' : ''}">
-                                <tbody>${moduleAttrs}</tbody>
-                            </table>
-                        ` : `
-                            <div class="no-attributes">
-                                No visible attributes with this filter
-                            </div>
-                        `}
-                    </div>
-                `;
+                const moduleAttrs = generateModuleAttributeRows(module, MODULE_DISPLAY_ATTRIBUTES);
+                return generateFilledModuleSlotHTML(module, moduleAttrs, idx, i, isActiveModule(module));
             } else {
-                return `
-                    <div class="module-slot empty">
-                        <div class="module-header">
-                            <button onclick="showModuleSelection(${idx}, ${i})" class="add-module-btn">Add Module</button>
-                        </div>
-                    </div>
-                `;
+                return generateEmptyModuleSlotHTML(idx, i);
             }
         }).join('')}
             </div>
         </div>
         `;
 
-        return `
-            <div class="selected-laserhead">
-                <div class="laserhead-info">
-                    <div class="size">S${laserhead.size || 1}</div>
-                    <div class="name" contenteditable="true" data-original-name="${laserhead.customName || cleanLaserName(laserhead.name)}">${laserhead.customName || cleanLaserName(laserhead.name)}</div>
-                    <button onclick="replaceLaserhead(${idx})" class="replace-btn">Replace</button>
-                    <button onclick="removeLaserhead(${idx})" class="remove-btn">×</button>
-                </div>
-                <table class="laserhead-table">
-                    <tbody>${rows}</tbody>
-                </table>
-                <div class="module-section">
+        const moduleSectionHTML = `<div class="module-section">
                         ${Array(numModuleSlots).fill(null).map((_, i) => {
                             const module = laserhead.modules[i];
                             if (module) {
-                                const moduleAttrs = MODULE_ATTRIBUTE_ORDER
-                                    .filter(attrName => window.moduleDisplayAttributes.has(attrName))
-                                    .map(attrName => {
-                                        const attr = module.attributes?.find(a => a.attribute_name === attrName);
-                                        if (!attr?.value || attr.value.trim() === '' || attr.value === '0') return '';
-                                        
-                                        let value = attr.value;
-                                        const numValue = parseFloat(value);
-                                        if (!isNaN(numValue)) {
-                                            const rounded = Math.round(numValue * 100) / 100;
-                                            value = rounded % 1 === 0 ? Math.round(rounded).toString() : rounded.toString();
-                                        }
-                                        
-                                        const unit = attr.unit || '';
-                                        // Grey out values if module is inactive
-                                        const inactiveClass = module.isActive === false ? 'inactive-value' : '';
-                                        return `<tr class="${inactiveClass}">
-                                            <td>${attrName}</td>
-                                            <td class="value-number">${value}</td>
-                                            <td class="value-unit">${unit}</td>
-                                        </tr>`;
-                                    })
-                                    .filter(row => row !== '')
-                                    .join('');
-
-                                const hasVisibleAttrs = moduleAttrs !== '';
-                                return `
-                                    <div class="module-slot filled">
-                                        <div class="module-header">
-                                            <div class="module-slot-info">
-                                                <span class="module-name ${module.isActive === false ? 'inactive' : ''} ${isActiveModule(module) ? 'clickable' : ''}" ${isActiveModule(module) ? `onclick="toggleModule(${idx}, ${i})"` : ''}>${module.name || ''}</span>
-                                            </div>
-                                            <div class="module-actions">
-                                                <button onclick="showModuleSelection(${idx}, ${i})" class="replace-btn">Replace</button>
-                                                <button onclick="removeModule(${idx}, ${i})" class="remove-btn">×</button>
-                                            </div>
-                                        </div>
-                                        ${hasVisibleAttrs ? `
-                                            <table class="module-table ${module.isActive === false ? 'inactive' : ''}">
-                                                <tbody>${moduleAttrs}</tbody>
-                                            </table>
-                                        ` : `
-                                            <div class="no-attributes">
-                                                No visible attributes with this filter
-                                            </div>
-                                        `}
-                                    </div>
-                                `;
+                                const moduleAttrs = generateModuleAttributeRows(module, window.moduleDisplayAttributes);
+                                return generateFilledModuleSlotHTML(module, moduleAttrs, idx, i, isActiveModule(module));
                             } else {
-                                return `
-                                    <div class="module-slot empty">
-                                        <div class="module-header">
-                                            <button onclick="showModuleSelection(${idx}, ${i})" class="add-module-btn">Add Module</button>
-                                        </div>
-                                    </div>
-                                `;
+                                return generateEmptyModuleSlotHTML(idx, i);
                             }
                         }).join('')}
                 </div>
-            </div>
-        `;
+            </div>`;
+        
+        return generateSelectedLaserheadHTML(laserhead, idx, rows, moduleSectionHTML);
     }).join('');
     
     // Add event handlers for name editing after rendering

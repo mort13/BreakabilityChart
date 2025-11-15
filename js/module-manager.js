@@ -4,11 +4,10 @@ import {
     MODULE_DISPLAY_ATTRIBUTES,
     ATTRIBUTE_ORDER_NAMES,
     DEFAULT_ACTIVE_NAMES,
-    DEFAULT_ACTIVE_MODULE_NAMES,
-    calculateCombinedValue,
-    getUnit
+    DEFAULT_ACTIVE_MODULE_NAMES
 } from './data-manager.js';
 import { renderSelectedLaserheads, selectedLaserheads } from './laserhead-manager.js';
+import { generateModuleCardHTML } from './html-generators.js';
 
 let currentLaserheadIndex = null;
 let currentModuleSlot = null;
@@ -146,7 +145,7 @@ export function renderModuleCards() {
         card.dataset.id = module.id;
         
         // Generate card HTML
-        card.innerHTML = generateModuleCardHTML(module);
+        card.innerHTML = buildModuleCardHTML(module);
         
         // Add click handler
         card.addEventListener('click', () => {
@@ -157,47 +156,8 @@ export function renderModuleCards() {
     });
 }
 
-function generateModuleCardHTML(module) {
-    const moduleAttrs = MODULE_ATTRIBUTE_ORDER
-        .map(attrName => {
-            const attr = module.attributes?.find(a => a.attribute_name === attrName);
-            if (!attr?.value || attr.value.trim() === '' || attr.value === '0') return '';
-            
-            let value = attr.value;
-            const numValue = parseFloat(value);
-            if (!isNaN(numValue)) {
-                const rounded = Math.round(numValue * 100) / 100;
-                value = rounded % 1 === 0 ? Math.round(rounded).toString() : rounded.toString();
-            }
-            
-            const unit = getUnit(attr) || attr.unit || '';
-            return `<tr>
-                <td class="attr-name">${attrName}</td>
-                <td class="value-number">${value}</td>
-                <td class="value-unit">${unit}</td>
-            </tr>`;
-        })
-        .filter(row => row !== '')
-        .join('');
-
-    return `
-        <div class="card-header">
-            <div class="name">${module.name}</div>
-        </div>
-        <table class="attributes-table">
-            <tbody>${moduleAttrs}</tbody>
-        </table>
-    `;
-}
-
-function generateEmptyModuleSlotHTML(slotIdx) {
-    return `
-        <div class="module-slot empty">
-            <div class="module-header">
-                <button onclick="showModuleSelection(${currentLaserheadIndex}, ${slotIdx})" class="add-module-btn">Add Module</button>
-            </div>
-        </div>
-    `;
+function buildModuleCardHTML(module) {
+    return generateModuleCardHTML(module, MODULE_DISPLAY_ATTRIBUTES);
 }
 
 function selectModule(id) {

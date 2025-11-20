@@ -8,6 +8,7 @@ import {
 } from './data-manager.js';
 import { renderSelectedLaserheads, selectedLaserheads } from './laserhead-manager.js';
 import { generateModuleCardHTML } from './html-generators.js';
+import { updateBreakabilityChart } from './chart-manager.js';
 
 let currentLaserheadIndex = null;
 let currentModuleSlot = null;
@@ -192,31 +193,32 @@ function buildModuleCardHTML(module) {
 
 function selectModule(id) {
     const module = miningData.modules.find(m => m.id === parseInt(id));
+    
+    // Close modal first
+    const modal = document.getElementById("moduleModal");
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+    
     if (!module) return;
 
     // Add module to the selected laserhead's modules
     if (typeof currentLaserheadIndex === 'number' && typeof currentModuleSlot === 'number') {
         const laserhead = selectedLaserheads[currentLaserheadIndex];
         if (laserhead) {
+            // Ensure modules array exists
+            if (!Array.isArray(laserhead.modules)) {
+                laserhead.modules = [];
+            }
+            
+            // Ensure array is large enough to hold this slot
+            while (laserhead.modules.length <= currentModuleSlot) {
+                laserhead.modules.push(null);
+            }
+            
             laserhead.modules[currentModuleSlot] = { ...module };
             renderSelectedLaserheads();
+            updateBreakabilityChart();
         }
     }
-
-    // Close modal
-    document.getElementById("moduleModal")?.classList.add("hidden");
-    if (!module) return;
-    
-    const modal = document.getElementById("moduleModal");
-    modal.classList.add('hidden');
-    
-    // Update the selected module in the slot
-    // ... (implement the selection logic)
-    
-    updateBreakabilityChart();
-}
-
-function updateBreakabilityChart() {
-    // Trigger chart update
-    // This will be handled by the chart manager
 }

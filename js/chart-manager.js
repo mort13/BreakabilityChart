@@ -1,12 +1,11 @@
 import { miningData, cleanLaserName } from './data-manager.js';
 import { selectedLaserheads } from './laserhead-manager.js';
-import { calculateTotalPower, calculateResistanceModifier, computeCurve } from './calculations.js';
-
-// Mining constant for mass calculations
-const c_mass = 0.2;
+import { calculateTotalPower, calculateResistanceModifier, computeCurve, computeMassAtResistance, computeRequiredPower, distributePowerAcrossLasers } from './calculations.js';
 
 let chart = null;
 let marker = null;
+let operatorSeatMode = false;
+let markerPosition = null; // Store last marker position for animation
 
 // Helper function to get CSS variable colors
 function getCSSColor(variableName) {
@@ -51,7 +50,7 @@ export function setupChart() {
                     position: 'bottom',
                     title: { 
                         display: true, 
-                        text: 'Resistance',
+                        text: 'Base Resistance',
                         font: {
                             size: 14,
                             weight: 'bold'
@@ -206,6 +205,71 @@ export function setupChart() {
         }
     });
     
+    // Make x-axis title clickable to toggle resistance mode
+    canvas.addEventListener('click', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        // Get the chart area dimensions
+        const chartArea = chart.chartArea;
+        const xScale = chart.scales.x;
+        
+        // The title is rendered below the chart area
+        // Estimate the title position based on Chart.js layout
+        const titleCenterX = (chartArea.left + chartArea.right) / 2;
+        const titleY = chartArea.bottom + 35; // Title is about 35px below chart area
+        const titleWidth = 150;
+        const titleHeight = 20;
+        
+        // Check if click is in the title area
+        if (y >= titleY - titleHeight / 2 && y <= titleY + titleHeight / 2 &&
+            x >= titleCenterX - titleWidth && x <= titleCenterX + titleWidth) {
+            operatorSeatMode = !operatorSeatMode;
+            const resistanceText = operatorSeatMode ? 'Effective Resistance' : 'Base Resistance';
+            chart.options.scales.x.title.text = resistanceText;
+            
+            // Update resistance input label
+            const resistanceLabel = document.getElementById('resistanceLabel');
+            if (resistanceLabel) {
+                resistanceLabel.textContent = resistanceText + ' (%):';
+            }
+            
+            updateBreakabilityChart();
+            updateMarker(); // Update the required power display
+        }
+    });
+    
+    // Add cursor pointer style when hovering over title
+    canvas.style.cursor = 'default';
+    canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        const chartArea = chart.chartArea;
+        const titleCenterX = (chartArea.left + chartArea.right) / 2;
+        const titleY = chartArea.bottom + 35;
+        const titleWidth = 150;
+        const titleHeight = 20;
+        
+        if (y >= titleY - titleHeight / 2 && y <= titleY + titleHeight / 2 &&
+            x >= titleCenterX - titleWidth && x <= titleCenterX + titleWidth) {
+            canvas.style.cursor = 'pointer';
+        } else {
+            canvas.style.cursor = 'default';
+        }
+    });
+    
+    // Setup marker input listeners
+    const massInput = document.getElementById('massInput');
+    const resistanceInput = document.getElementById('resistanceInput');
+    
+    if (massInput && resistanceInput) {
+        massInput.addEventListener('input', updateMarker);
+        resistanceInput.addEventListener('input', updateMarker);
+    }
+    
     // Ensure colors are set correctly after initialization
     setTimeout(() => {
         updateChartColors();
@@ -258,7 +322,7 @@ export function updateBreakabilityChart() {
         // Calculate values for this laser
         const maxP = calculateTotalPower(laserhead, activeModules, true);
         const minP = calculateTotalPower(laserhead, activeModules, false);
-        const r_mod = calculateResistanceModifier(laserhead, activeModules, selectedGadget);
+        const r_mod = operatorSeatMode ? 1 : calculateResistanceModifier(laserhead, activeModules, selectedGadget);
         
         // Store values for total calculation
         maxPowers.push(maxP);
@@ -327,8 +391,8 @@ export function updateBreakabilityChart() {
                     // Check if this laser's dataset exists and is visible
                     const isVisible = laserDataset && !laserDataset.hidden;
                     if (isVisible) {
-                        totalMaxMass += maxPowers[i] / ((1 + (R/100) * resistanceModifiers[i]) * c_mass);
-                        totalMinMass += minPowers[i] / ((1 + (R/100) * resistanceModifiers[i]) * c_mass);
+                        totalMaxMass += computeMassAtResistance(maxPowers[i], R, resistanceModifiers[i]);
+                        totalMinMass += computeMassAtResistance(minPowers[i], R, resistanceModifiers[i]);
                     }
                 }
                 
@@ -474,8 +538,8 @@ export function updateBreakabilityChart() {
                                        (!isVisible && isThisGroup && !willHide);
                     
                     if (shouldInclude) {
-                        totalMaxMass += maxPowers[i] / ((1 + (R/100) * resistanceModifiers[i]) * c_mass);
-                        totalMinMass += minPowers[i] / ((1 + (R/100) * resistanceModifiers[i]) * c_mass);
+                        totalMaxMass += computeMassAtResistance(maxPowers[i], R, resistanceModifiers[i]);
+                        totalMinMass += computeMassAtResistance(minPowers[i], R, resistanceModifiers[i]);
                     }
                 }
                 
@@ -518,23 +582,90 @@ export function updateBreakabilityChart() {
 }
 
 export function updateMarker() {
-    const m = parseFloat(document.getElementById('massInput').value);
-    const R = parseFloat(document.getElementById('resistanceInput').value);
     if (!chart) return;
+    
+    const massInput = document.getElementById('massInput');
+    const resistanceInput = document.getElementById('resistanceInput');
+    const powerDisplay = document.getElementById('requiredPowerDisplay');
+    
+    if (!massInput || !resistanceInput) return;
+    
+    const m = parseFloat(massInput.value);
+    const R = parseFloat(resistanceInput.value);
 
-    if (marker) {
+    // Only update marker if both values are valid numbers
+    if (!isNaN(m) && !isNaN(R) && m > 0 && R >= 0 && R <= 100) {
+        const newPosition = { x: R, y: m };
+        
+        // Find existing marker dataset
+        let markerDataset = chart.data.datasets.find(ds => ds.label === "Marker");
+        
+        if (markerDataset) {
+            // Update existing marker position (will animate from current to new)
+            markerDataset.data = [newPosition];
+        } else {
+            // Create new marker (first time)
+            chart.data.datasets.push({
+                label: "Marker",
+                data: [newPosition],
+                type: "scatter",
+                backgroundColor: "red",
+                pointRadius: 8,
+                pointHoverRadius: 10
+            });
+        }
+        
+        marker = true;
+        markerPosition = newPosition;
+        
+        // Calculate required power
+        calculateRequiredPowerDisplay(m, R);
+        
+        chart.update({
+            duration: 400,
+            easing: 'easeInOutQuad'
+        });
+    } else {
+        // Remove marker if values are invalid
         chart.data.datasets = chart.data.datasets.filter(ds => ds.label !== "Marker");
+        marker = false;
+        markerPosition = null;
+        if (powerDisplay) powerDisplay.textContent = '-';
+        chart.update(0);
     }
+}
 
-    chart.data.datasets.push({
-        label: "Marker",
-        data: [{ x: R, y: m }],
-        type: "scatter",
-        backgroundColor: "red",
-        pointRadius: 6
+function calculateRequiredPowerDisplay(mass, resistance) {
+    const powerDisplay = document.getElementById('requiredPowerDisplay');
+    if (!powerDisplay || !selectedLaserheads || selectedLaserheads.length === 0) {
+        if (powerDisplay) powerDisplay.textContent = '-';
+        return;
+    }
+    
+    // Calculate total required power
+    // Use resistance modifier based on operator seat mode
+    // Base Resistance (not toggled): use first laser's resistance modifier
+    // Effective Resistance (toggled): use modifier = 1
+    const firstLaserhead = selectedLaserheads[0];
+    const firstActiveModules = firstLaserhead.modules?.filter(m => m.isActive !== false) || [];
+    const firstLaserResistanceMod = operatorSeatMode ? 1 : calculateResistanceModifier(firstLaserhead, firstActiveModules, selectedGadget);
+    
+    let remainingPower = computeRequiredPower(mass, resistance, firstLaserResistanceMod);
+    
+    // Build list of lasers with their power specs
+    const lasers = selectedLaserheads.map((laserhead, idx) => {
+        const activeModules = laserhead.modules?.filter(m => m.isActive !== false) || [];
+        return {
+            index: idx,
+            maxPower: calculateTotalPower(laserhead, activeModules, true),
+            minPower: calculateTotalPower(laserhead, activeModules, false)
+        };
     });
-
-    chart.update();
+    
+    // Use calculation function to distribute power
+    const distribution = distributePowerAcrossLasers(remainingPower, lasers);
+    
+    powerDisplay.innerHTML = distribution.join(' + ');
 }
 
 import { selectedGadget } from './gadget-manager.js';
@@ -558,7 +689,7 @@ function addLaserDataset(laserhead, modules, index) {
     // Calculate max and min power values
     const maxP = calculateTotalPower(laserhead, modules, true);  // true for max power
     const minP = calculateTotalPower(laserhead, modules, false); // false for min power
-    const r_mod = calculateResistanceModifier(laserhead, modules, selectedGadget);
+    const r_mod = operatorSeatMode ? 1 : calculateResistanceModifier(laserhead, modules, selectedGadget);
     
     const color = getColor(index);
     

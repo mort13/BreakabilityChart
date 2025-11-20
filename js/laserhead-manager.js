@@ -317,20 +317,24 @@ export function renderSelectedLaserheads() {
         const attrMap = new Map(laserAttrs.map(attr => [attr.name, attr]));
         
         // Add synthetic attributes from modules for attributes the laserhead doesn't have
+        const processedSyntheticAttrs = new Set();
         (laserhead.modules || []).forEach(module => {
             if (module && module.isActive !== false) {
                 (module.attributes || []).forEach(modAttr => {
                     // If laserhead doesn't have this attribute but module modifies it
                     // AND it's in display options
+                    // AND we haven't already processed this synthetic attribute
                     if (!attrMap.has(modAttr.attribute_name) && modAttr.value && modAttr.value !== '0' && modAttr.value.trim() !== ''
-                        && window.displayAttributes.includes(modAttr.attribute_name)) {
-                        // Create synthetic attribute
-                        const syntheticAttr = createSyntheticAttribute(modAttr.attribute_name, [module]);
+                        && window.displayAttributes.includes(modAttr.attribute_name)
+                        && !processedSyntheticAttrs.has(modAttr.attribute_name)) {
+                        // Create synthetic attribute with ALL modules, not just one
+                        const syntheticAttr = createSyntheticAttribute(modAttr.attribute_name, laserhead.modules || []);
                         if (syntheticAttr) {
-                            const processedAttrs = processAttribute(syntheticAttr, false, [module]);
+                            const processedAttrs = processAttribute(syntheticAttr, false, laserhead.modules || []);
                             processedAttrs.forEach(pa => {
                                 if (!attrMap.has(pa.name)) {
                                     attrMap.set(pa.name, pa);
+                                    processedSyntheticAttrs.add(pa.name);
                                 }
                             });
                         }

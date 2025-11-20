@@ -1,6 +1,31 @@
 // Pure calculation functions - no DOM manipulation
 import { getUnit, calculateCombinedValue } from './data-manager.js';
 
+// Mining constant for mass calculations
+export const c_mass = 0.2;
+
+/**
+ * Calculate mass at a given resistance
+ * @param {number} power - Power value
+ * @param {number} resistance - Resistance percentage (0-100)
+ * @param {number} resistanceModifier - Resistance modifier multiplier
+ * @returns {number} - Calculated mass
+ */
+export function computeMassAtResistance(power, resistance, resistanceModifier) {
+    return power / ((1 + (resistance / 100) * resistanceModifier) * c_mass);
+}
+
+/**
+ * Calculate required power for a given mass and resistance
+ * @param {number} mass - Mass value
+ * @param {number} resistance - Resistance percentage (0-100)
+ * @param {number} resistanceModifier - Resistance modifier multiplier
+ * @returns {number} - Required power
+ */
+export function computeRequiredPower(mass, resistance, resistanceModifier) {
+    return mass * (1 + (resistance / 100) * resistanceModifier) * c_mass;
+}
+
 /**
  * Calculate the modified attribute value with module modifiers applied
  * @param {Object} attr - The attribute object
@@ -23,12 +48,12 @@ export function calculateAttributeValue(attr, modules = []) {
     
     // Special handling for Maximum/Minimum Laser Power
     if (attrName === "Maximum Laser Power" || attrName === "Minimum Laser Power") {
-        return calculateLaserPowerWithModifiers(baseValue, moduleModifiers, modules);
+        return calculateLaserPowerWithModifiers(baseValue, moduleModifiers, modules, attrName);
     }
     
     // Percentage attributes
     if (unit === '%') {
-        return calculatePercentageWithModifiers(baseValue, moduleModifiers, modules);
+        return calculatePercentageWithModifiers(baseValue, moduleModifiers, modules, attrName);
     }
     
     // Other attributes
@@ -57,21 +82,24 @@ function getModuleModifiers(attrName, modules) {
 /**
  * Calculate laser power with module modifiers (using factor = value/100)
  * @param {number} baseValue - Base power value
- * @param {Array} moduleModifiers - Array of modifier values
+ * @param {Array} moduleModifiers - Array of modifier values (unused)
  * @param {Array} modules - Array of module objects
+ * @param {string} attrName - Attribute name (unused, kept for consistency)
  * @returns {number} - Calculated power
  */
-function calculateLaserPowerWithModifiers(baseValue, moduleModifiers, modules) {
+function calculateLaserPowerWithModifiers(baseValue, moduleModifiers, modules, attrName) {
     let finalValue = baseValue;
     
-    moduleModifiers.forEach((modValue, index) => {
-        const module = modules[index];
-        if (module) {
-            const isPassive = isPassiveModule(module);
-            const useModule = isPassive || module.isActive !== false;
-            if (useModule) {
-                const modFactor = modValue / 100;
-                finalValue *= modFactor;
+    modules.forEach((module) => {
+        if (module && module.attributes) {
+            const modAttr = module.attributes.find(a => a.attribute_name === "Mining Laser Power");
+            if (modAttr && modAttr.value) {
+                const isPassive = isPassiveModule(module);
+                const useModule = isPassive || module.isActive !== false;
+                if (useModule) {
+                    const modFactor = parseFloat(modAttr.value) / 100;
+                    finalValue *= modFactor;
+                }
             }
         }
     });
@@ -82,21 +110,24 @@ function calculateLaserPowerWithModifiers(baseValue, moduleModifiers, modules) {
 /**
  * Calculate percentage attribute with module modifiers
  * @param {number} baseValue - Base percentage value
- * @param {Array} moduleModifiers - Array of modifier values
+ * @param {Array} moduleModifiers - Array of modifier values (unused)
  * @param {Array} modules - Array of module objects
+ * @param {string} attrName - Attribute name
  * @returns {number} - Calculated percentage
  */
-function calculatePercentageWithModifiers(baseValue, moduleModifiers, modules) {
+function calculatePercentageWithModifiers(baseValue, moduleModifiers, modules, attrName) {
     let factor = 1 + (baseValue / 100); // Convert base value to factor
     
-    moduleModifiers.forEach((modValue, index) => {
-        const module = modules[index];
-        if (module) {
-            const isPassive = isPassiveModule(module);
-            const useModule = isPassive || module.isActive !== false;
-            if (useModule) {
-                const modFactor = 1 + (modValue / 100);
-                factor *= modFactor;
+    modules.forEach((module) => {
+        if (module && module.attributes) {
+            const modAttr = module.attributes.find(a => a.attribute_name === attrName);
+            if (modAttr && modAttr.value) {
+                const isPassive = isPassiveModule(module);
+                const useModule = isPassive || module.isActive !== false;
+                if (useModule) {
+                    const modFactor = 1 + (parseFloat(modAttr.value) / 100);
+                    factor *= modFactor;
+                }
             }
         }
     });
@@ -259,7 +290,7 @@ export function computeCurve(power, resistanceModifier) {
     for (let R = 0; R <= 100; R += 0.1) {
         data.push({ 
             x: R, 
-            y: power / ((1 + (R/100) * resistanceModifier) * 0.2) 
+            y: computeMassAtResistance(power, R, resistanceModifier)
         });
     }
     return data;
@@ -290,4 +321,79 @@ export function createSyntheticAttribute(attrName, modules) {
         value: "0",  // Base value of 0 (factor of 1) when laser doesn't have attribute
         unit: moduleAttr.unit
     };
+}
+
+/**
+ * Distribute power across multiple lasers respecting minimum power constraints
+ * @param {number} totalRequiredPower - Total power needed
+ * @param {Array} lasers - Array of laser objects with {index, maxPower, minPower}
+ * @returns {Array} - Array of result strings for display
+ */
+export function distributePowerAcrossLasers(totalRequiredPower, lasers) {
+    let remainingPower = totalRequiredPower;
+    let results = [];
+    let laserIndex = 0;
+    
+    while (remainingPower > 0 && laserIndex < lasers.length) {
+        const currentLaser = lasers[laserIndex];
+        
+        // Check if we need more lasers after this one
+        if (laserIndex + 1 < lasers.length) {
+            const nextLaser = lasers[laserIndex + 1];
+            const minPercentage = (nextLaser.minPower / nextLaser.maxPower) * 100;
+            
+            // Can we handle remaining power with just current laser?
+            if (remainingPower <= currentLaser.maxPower) {
+                // Check if using remaining power would require next laser below min
+                if (remainingPower > currentLaser.maxPower - nextLaser.minPower) {
+                    // We'll need next laser, so set it to min power
+                    const nextLaserPower = nextLaser.minPower;
+                    const currentLaserPower = remainingPower - nextLaserPower;
+                    
+                    if (currentLaserPower <= currentLaser.maxPower) {
+                        // Current laser can handle its portion
+                        const currentPercentage = (currentLaserPower / currentLaser.maxPower) * 100;
+                        results.push(`L${laserIndex + 1}: ${currentPercentage.toFixed(1)}%`);
+                        
+                        const nextPercentage = minPercentage;
+                        results.push(`L${laserIndex + 2}: ${nextPercentage.toFixed(1)}%`);
+                        
+                        remainingPower = 0;
+                        break;
+                    }
+                } else {
+                    // Can use just current laser without next laser going below min
+                    const percentage = (remainingPower / currentLaser.maxPower) * 100;
+                    results.push(`L${laserIndex + 1}: ${percentage.toFixed(1)}%`);
+                    remainingPower = 0;
+                    break;
+                }
+            }
+            
+            // Need to use current laser at 100% and continue
+            results.push(`L${laserIndex + 1}: 100%`);
+            remainingPower -= currentLaser.maxPower;
+        } else {
+            // Last laser - use what's needed
+            if (remainingPower <= currentLaser.maxPower) {
+                const percentage = (remainingPower / currentLaser.maxPower) * 100;
+                const minPercentage = (currentLaser.minPower / currentLaser.maxPower) * 100;
+                const clampedPercentage = Math.max(minPercentage, Math.min(100, percentage));
+                
+                results.push(`L${laserIndex + 1}: ${clampedPercentage.toFixed(1)}%`);
+                remainingPower = 0;
+            } else {
+                results.push(`L${laserIndex + 1}: 100%`);
+                remainingPower -= currentLaser.maxPower;
+            }
+        }
+        
+        laserIndex++;
+    }
+    
+    if (remainingPower > 0) {
+        results.push(`<span style="color: red;">(+${remainingPower.toFixed(1)} MW needed)</span>`);
+    }
+    
+    return results;
 }

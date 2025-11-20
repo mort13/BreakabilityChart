@@ -26,11 +26,27 @@
     <div class="chart-container">
         <canvas id="miningChart"></canvas>
     </div>
-    <div class="gadget-selector">
-        <label for="gadgetSelect">Gadget:</label>
-        <select id="gadgetSelect">
-            <option value="none">None</option>
-        </select>
+    <div class="chart-controls">
+        <div class="gadget-selector">
+            <label for="gadgetSelect">Gadget:</label>
+            <select id="gadgetSelect">
+                <option value="none">None</option>
+            </select>
+        </div>
+        <div class="marker-inputs">
+            <div class="input-group">
+                <label for="massInput">Mass:</label>
+                <input type="number" id="massInput" step="0.1" min="0" placeholder="0">
+            </div>
+            <div class="input-group">
+                <label for="resistanceInput" id="resistanceLabel">Base Resistance (%):</label>
+                <input type="number" id="resistanceInput" step="0.1" min="0" max="100" placeholder="0">
+            </div>
+            <div class="input-group">
+                <label>Required Power:</label>
+                <div id="requiredPowerDisplay">-</div>
+            </div>
+        </div>
     </div>
     <div id="footerContainer"></div>
   </div>
@@ -59,10 +75,12 @@
         <p><strong>Breakability Chart Tab:</strong></p>
         <ul>
           <li>On the X axis you see the resistance in %, on the Y axis the mass. The breakability only depends on these two values.</li>
-          <li>The chart shows the maximum mass/resistance rocks you can break with your setup. Here the unmodified rock values are used.</li>
-          <li>The unmodified rock values are the one you see e.g. from the moles pilot seat. Only unmodified numbers appear white ingame.</li>
+          <li>The chart shows the maximum mass/resistance rocks you can break with your setup.</li>
+          <li>The base rock values are the one you see e.g. from the moles pilot seat. Only unmodified numbers appear white ingame. You can toggle to the modifed resistance by clicking in the x axis label.</li>
           <li>You can deactivate a laser by clicking on its name in the legend.</li>
           <li>Use the gadget selector to see how breakability changes with different gadgets.</li>
+          <li>You can enter the mass and resistance of a rock and see how much percentage of your laserpower you need to apply. It kinda works with multiple lasers but one caveat is that it either uses all or none resistance modifiers.</li>
+
         </ul>
         <p><strong>Notes</strong></p>
         <ul>

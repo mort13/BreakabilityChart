@@ -65,10 +65,11 @@ export function setupTabs() {
                 content.classList.remove('hidden');
             }
             
-            // If switching to chart tab, update the chart
+            // If switching to chart tab, update the chart and marker
             if (contentId === 'breakability') {
                 console.log('Switching to Breakability Chart Tab - Updating Chart');
                 updateBreakabilityChart();
+                updateMarker(); // Update marker/power calculations
             }
         });
     });

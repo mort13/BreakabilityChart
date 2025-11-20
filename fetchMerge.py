@@ -81,6 +81,9 @@ for cat_name, files in categories.items():
     
     merged = merge_attributes(items, attrs)
     
+    # Sort by name
+    merged.sort(key=lambda x: x.get("name", "").lower())
+    
     output_file = os.path.join(DATA_DIR, f"{cat_name}_merged.json")
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(merged, f, indent=2)

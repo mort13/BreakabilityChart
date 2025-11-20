@@ -2,6 +2,9 @@ import { miningData, cleanLaserName } from './data-manager.js';
 import { selectedLaserheads } from './laserhead-manager.js';
 import { calculateTotalPower, calculateResistanceModifier, computeCurve } from './calculations.js';
 
+// Mining constant for mass calculations
+const c_mass = 0.2;
+
 let chart = null;
 let marker = null;
 
@@ -324,8 +327,8 @@ export function updateBreakabilityChart() {
                     // Check if this laser's dataset exists and is visible
                     const isVisible = laserDataset && !laserDataset.hidden;
                     if (isVisible) {
-                        totalMaxMass += maxPowers[i] / ((1 + (R/100) * resistanceModifiers[i]) * 0.182);
-                        totalMinMass += minPowers[i] / ((1 + (R/100) * resistanceModifiers[i]) * 0.182);
+                        totalMaxMass += maxPowers[i] / ((1 + (R/100) * resistanceModifiers[i]) * c_mass);
+                        totalMinMass += minPowers[i] / ((1 + (R/100) * resistanceModifiers[i]) * c_mass);
                     }
                 }
                 
@@ -471,8 +474,8 @@ export function updateBreakabilityChart() {
                                        (!isVisible && isThisGroup && !willHide);
                     
                     if (shouldInclude) {
-                        totalMaxMass += maxPowers[i] / ((1 + (R/100) * resistanceModifiers[i]) * 0.182);
-                        totalMinMass += minPowers[i] / ((1 + (R/100) * resistanceModifiers[i]) * 0.182);
+                        totalMaxMass += maxPowers[i] / ((1 + (R/100) * resistanceModifiers[i]) * c_mass);
+                        totalMinMass += minPowers[i] / ((1 + (R/100) * resistanceModifiers[i]) * c_mass);
                     }
                 }
                 

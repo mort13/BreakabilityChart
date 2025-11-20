@@ -229,7 +229,7 @@ button:hover {
   min-height: 400px;
 }
 
-.sizeFilter.active {
+.sizeFilter.active, .moduleTypeFilter.active {
   background-color: var(--color-tab-active);
   color: white;
   border-color: var(--color-tab-active);

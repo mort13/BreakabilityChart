@@ -11,9 +11,11 @@ import { generateModuleCardHTML } from './html-generators.js';
 
 let currentLaserheadIndex = null;
 let currentModuleSlot = null;
+let activeModuleTypes = new Set(["active", "passive"]); // Show both types by default
 
 export function setupModuleUI() {
     setupModuleModal();
+    setupModuleTypeFilters();
 }
 
 export function showModuleSelection(laserIdx, slotIdx) {
@@ -135,11 +137,39 @@ function setupModuleModal() {
     });
 }
 
+function setupModuleTypeFilters() {
+    document.querySelectorAll(".moduleTypeFilter").forEach(btn => {
+        const type = btn.dataset.type;
+        
+        if (activeModuleTypes.has(type)) {
+            btn.classList.add("active");
+        }
+        
+        btn.addEventListener("click", () => {
+            if(activeModuleTypes.has(type)) {
+                activeModuleTypes.delete(type);
+                btn.classList.remove("active");
+            } else {
+                activeModuleTypes.add(type);
+                btn.classList.add("active");
+            }
+            renderModuleCards();
+        });
+    });
+}
+
 export function renderModuleCards() {
     const container = document.getElementById('moduleCards');
     container.innerHTML = '';
     
-    miningData.modules.forEach(module => {
+    // Filter modules based on active/passive selection
+    const filteredModules = miningData.modules.filter(module => {
+        const isActive = isActiveModule(module);
+        const moduleType = isActive ? "active" : "passive";
+        return activeModuleTypes.has(moduleType);
+    });
+    
+    filteredModules.forEach(module => {
         const card = document.createElement('div');
         card.className = 'laser-card';  // Use same styling as laser cards
         card.dataset.id = module.id;

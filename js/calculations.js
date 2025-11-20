@@ -259,7 +259,7 @@ export function computeCurve(power, resistanceModifier) {
     for (let R = 0; R <= 100; R += 0.1) {
         data.push({ 
             x: R, 
-            y: power / ((1 + (R/100) * resistanceModifier) * 0.182) 
+            y: power / ((1 + (R/100) * resistanceModifier) * 0.2) 
         });
     }
     return data;

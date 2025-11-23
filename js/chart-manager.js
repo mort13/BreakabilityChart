@@ -1,6 +1,6 @@
 import { miningData, cleanLaserName } from './data-manager.js';
 import { selectedLaserheads } from './laserhead-manager.js';
-import { calculateTotalPower, calculateResistanceModifier, computeCurve, computeMassAtResistance, computeRequiredPower, distributePowerAcrossLasers } from './calculations.js';
+import { calculateTotalPower, calculateResistanceModifier, computeCurve, computeMassAtResistance, distributePowerAcrossLasers } from './calculations.js';
 
 let chart = null;
 let marker = null;
@@ -642,30 +642,22 @@ function calculateRequiredPowerDisplay(mass, resistance) {
         return;
     }
     
-    // Calculate total required power
-    // Use resistance modifier based on operator seat mode
-    // Base Resistance (not toggled): use first laser's resistance modifier
-    // Effective Resistance (toggled): use modifier = 1
-    const firstLaserhead = selectedLaserheads[0];
-    const firstActiveModules = firstLaserhead.modules?.filter(m => m.isActive !== false) || [];
-    const firstLaserResistanceMod = operatorSeatMode ? 1 : calculateResistanceModifier(firstLaserhead, firstActiveModules, selectedGadget);
-    
-    let remainingPower = computeRequiredPower(mass, resistance, firstLaserResistanceMod);
-    
-    // Build list of lasers with their power specs
-    const lasers = selectedLaserheads.map((laserhead, idx) => {
+    // Build list of lasers with their parameters
+    const laserParameters = selectedLaserheads.map((laserhead) => {
         const activeModules = laserhead.modules?.filter(m => m.isActive !== false) || [];
+        const resistanceMod = operatorSeatMode ? 1 : calculateResistanceModifier(laserhead, activeModules, selectedGadget);
+        
         return {
-            index: idx,
             maxPower: calculateTotalPower(laserhead, activeModules, true),
-            minPower: calculateTotalPower(laserhead, activeModules, false)
+            minPower: calculateTotalPower(laserhead, activeModules, false),
+            resistanceModifier: resistanceMod
         };
     });
     
     // Use calculation function to distribute power
-    const distribution = distributePowerAcrossLasers(remainingPower, lasers);
+    const distribution = distributePowerAcrossLasers(mass, resistance, laserParameters);
     
-    powerDisplay.innerHTML = distribution.join(' + ');
+    powerDisplay.innerHTML = distribution;
 }
 
 import { selectedGadget } from './gadget-manager.js';

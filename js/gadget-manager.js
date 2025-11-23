@@ -1,5 +1,5 @@
 import { miningData } from './data-manager.js';
-import { updateBreakabilityChart } from './chart-manager.js';
+import { updateBreakabilityChart, updateMarker } from './chart-manager.js';
 
 export let selectedGadget = null;
 
@@ -32,5 +32,6 @@ export function setupGadgetUI() {
             selectedGadget = miningData.gadgets.find(g => g.id.toString() === gadgetId);
         }
         updateBreakabilityChart();
+        updateMarker(); // Update marker and power calculations
     });
 }

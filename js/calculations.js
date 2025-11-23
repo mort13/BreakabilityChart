@@ -324,76 +324,75 @@ export function createSyntheticAttribute(attrName, modules) {
 }
 
 /**
- * Distribute power across multiple lasers respecting minimum power constraints
- * @param {number} totalRequiredPower - Total power needed
- * @param {Array} lasers - Array of laser objects with {index, maxPower, minPower}
- * @returns {Array} - Array of result strings for display
+ * Calculate power distribution across multiple lasers
+ * Returns a single percentage that applies to all lasers simultaneously
+ * @param {number} mass - Mass value
+ * @param {number} resistance - Resistance percentage (0-100)
+ * @param {Array} laserParameters - Array of laser objects with {maxPower, minPower, resistanceModifier}
+ * @returns {Object} - {percentage: number, usedLasers: number, insufficient: boolean}
  */
-export function distributePowerAcrossLasers(totalRequiredPower, lasers) {
-    let remainingPower = totalRequiredPower;
-    let results = [];
-    let laserIndex = 0;
-    
-    while (remainingPower > 0 && laserIndex < lasers.length) {
-        const currentLaser = lasers[laserIndex];
-        
-        // Check if we need more lasers after this one
-        if (laserIndex + 1 < lasers.length) {
-            const nextLaser = lasers[laserIndex + 1];
-            const minPercentage = (nextLaser.minPower / nextLaser.maxPower) * 100;
-            
-            // Can we handle remaining power with just current laser?
-            if (remainingPower <= currentLaser.maxPower) {
-                // Check if using remaining power would require next laser below min
-                if (remainingPower > currentLaser.maxPower - nextLaser.minPower) {
-                    // We'll need next laser, so set it to min power
-                    const nextLaserPower = nextLaser.minPower;
-                    const currentLaserPower = remainingPower - nextLaserPower;
-                    
-                    if (currentLaserPower <= currentLaser.maxPower) {
-                        // Current laser can handle its portion
-                        const currentPercentage = (currentLaserPower / currentLaser.maxPower) * 100;
-                        results.push(`L${laserIndex + 1}: ${currentPercentage.toFixed(1)}%`);
-                        
-                        const nextPercentage = minPercentage;
-                        results.push(`L${laserIndex + 2}: ${nextPercentage.toFixed(1)}%`);
-                        
-                        remainingPower = 0;
-                        break;
-                    }
-                } else {
-                    // Can use just current laser without next laser going below min
-                    const percentage = (remainingPower / currentLaser.maxPower) * 100;
-                    results.push(`L${laserIndex + 1}: ${percentage.toFixed(1)}%`);
-                    remainingPower = 0;
-                    break;
-                }
-            }
-            
-            // Need to use current laser at 100% and continue
-            results.push(`L${laserIndex + 1}: 100%`);
-            remainingPower -= currentLaser.maxPower;
-        } else {
-            // Last laser - use what's needed
-            if (remainingPower <= currentLaser.maxPower) {
-                const percentage = (remainingPower / currentLaser.maxPower) * 100;
-                const minPercentage = (currentLaser.minPower / currentLaser.maxPower) * 100;
-                const clampedPercentage = Math.max(minPercentage, Math.min(100, percentage));
-                
-                results.push(`L${laserIndex + 1}: ${clampedPercentage.toFixed(1)}%`);
-                remainingPower = 0;
-            } else {
-                results.push(`L${laserIndex + 1}: 100%`);
-                remainingPower -= currentLaser.maxPower;
-            }
-        }
-        
-        laserIndex++;
+export function calculatePowerPercentage(mass, resistance, laserParameters) {
+    if (laserParameters.length === 0) {
+        return { percentage: 0, usedLasers: 0, insufficient: true };
     }
     
-    if (remainingPower > 0) {
-        results.push(`<span style="color: red;">(+${remainingPower.toFixed(1)} MW needed)</span>`);
+    // The effective resistance modifier accumulates laser modifiers
+    // Each laser's resistanceModifier already includes gadget effect from calculateResistanceModifier
+    let effResistanceModifier = laserParameters[0].resistanceModifier;
+    let maxPower = laserParameters[0].maxPower;
+    let i = 0;
+    
+    let powerNeeded = mass * c_mass * (1 + resistance / 100) * effResistanceModifier;
+    let powerPercentage = powerNeeded / maxPower;
+    
+    // Keep adding lasers until we can handle the power needed
+    while (powerPercentage > 1 && i < laserParameters.length - 1) {
+        i += 1;
+        effResistanceModifier *= laserParameters[i].resistanceModifier;
+        powerNeeded = mass * c_mass * (1 + resistance / 100) * effResistanceModifier;
+        maxPower += laserParameters[i].maxPower;
+        powerPercentage = powerNeeded / maxPower;
     }
     
-    return results;
+    // Check if all lasers at 100% is still insufficient
+    if (powerPercentage > 1) {
+        return { 
+            percentage: 100, 
+            usedLasers: i + 1, 
+            insufficient: true,
+            missingPower: powerNeeded - maxPower
+        };
+    }
+    
+    return { 
+        percentage: powerPercentage * 100, 
+        usedLasers: i + 1, 
+        insufficient: false 
+    };
+}
+
+/**
+ * Distribute power across multiple lasers and format for display
+ * @param {number} mass - Mass value
+ * @param {number} resistance - Resistance percentage (0-100)
+ * @param {Array} lasers - Array of laser objects with {index, maxPower, minPower, resistanceModifier}
+ * @returns {string} - Formatted display string
+ */
+export function distributePowerAcrossLasers(mass, resistance, lasers) {
+    const result = calculatePowerPercentage(mass, resistance, lasers);
+    
+    // Build list of laser names
+    const laserNames = [];
+    for (let i = 0; i < result.usedLasers; i++) {
+        laserNames.push(`L${i + 1}`);
+    }
+    
+    let output = `Required lasers: ${laserNames.join(', ')} at ${result.percentage.toFixed(1)}%`;
+    
+    // If insufficient, show how much more power is needed
+    if (result.insufficient) {
+        output += ` <span style="color: red;">(+${result.missingPower.toFixed(1)} MW needed)</span>`;
+    }
+    
+    return output;
 }

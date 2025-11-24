@@ -9,6 +9,7 @@ import {
 import { renderSelectedLaserheads, selectedLaserheads } from './laserhead-manager.js';
 import { generateModuleCardHTML } from './html-generators.js';
 import { updateBreakabilityChart } from './chart-manager.js';
+import { saveLaserSetup, saveActiveModuleTypes, loadActiveModuleTypes, saveActiveTiers, loadActiveTiers, saveDisplayAttributes, saveModuleDisplayAttributes } from './storage-manager.js';
 
 let currentLaserheadIndex = null;
 let currentModuleSlot = null;
@@ -16,6 +17,17 @@ let activeModuleTypes = new Set(["active", "passive"]); // Show both types by de
 let activeTiers = new Set([1, 2, 3]); // Show all tiers by default
 
 export function setupModuleUI() {
+    // Load saved filters
+    const savedModuleTypes = loadActiveModuleTypes();
+    if (savedModuleTypes) {
+        activeModuleTypes = savedModuleTypes;
+    }
+    
+    const savedTiers = loadActiveTiers();
+    if (savedTiers) {
+        activeTiers = savedTiers;
+    }
+    
     setupModuleModal();
     setupModuleTypeFilters();
     setupTierFilters();
@@ -41,6 +53,7 @@ export function removeModule(laserIdx, moduleIdx) {
         
         // Update the display
         renderSelectedLaserheads();
+        saveLaserSetup(selectedLaserheads);
     }
 }
 
@@ -96,6 +109,7 @@ export function renderDisplayOptions() {
                     .filter(cb => cb.checked)
                     .map(cb => cb.id.replace('attr_', ''));
                 window.displayAttributes = checked;
+                saveDisplayAttributes(checked);
                 renderSelectedLaserheads();
             });
         });
@@ -120,6 +134,7 @@ export function renderDisplayOptions() {
                         .map(cb => cb.id.replace('mod_', ''))
                 );
                 window.moduleDisplayAttributes = checked;
+                saveModuleDisplayAttributes(checked);
                 renderSelectedLaserheads();
             });
         });
@@ -160,6 +175,7 @@ function setupModuleTypeFilters() {
                 tierFilterContainer.style.display = activeModuleTypes.has('passive') ? 'flex' : 'none';
             }
             
+            saveActiveModuleTypes(activeModuleTypes);
             renderModuleCards();
         });
     });
@@ -181,6 +197,7 @@ function setupTierFilters() {
                 activeTiers.add(tier);
                 btn.classList.add("active");
             }
+            saveActiveTiers(activeTiers);
             renderModuleCards();
         });
     });
@@ -268,6 +285,7 @@ function selectModule(id) {
             
             laserhead.modules[currentModuleSlot] = { ...module };
             renderSelectedLaserheads();
+            saveLaserSetup(selectedLaserheads);
         }
     }
 }

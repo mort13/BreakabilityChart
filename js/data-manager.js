@@ -171,9 +171,12 @@ export function cleanLaserName(name) {
                .replace(/Mining Laser ?/i, "");
 }
 
-// Initialize window globals
-window.displayAttributes = DEFAULT_ACTIVE_NAMES;
-window.moduleDisplayAttributes = new Set(DEFAULT_ACTIVE_MODULE_NAMES);
+// Import storage functions
+import { loadDisplayAttributes, loadModuleDisplayAttributes } from './storage-manager.js';
+
+// Initialize window globals with saved values or defaults
+window.displayAttributes = loadDisplayAttributes() || DEFAULT_ACTIVE_NAMES;
+window.moduleDisplayAttributes = loadModuleDisplayAttributes() || new Set(DEFAULT_ACTIVE_MODULE_NAMES);
 
 export async function loadMiningData() {
     try {

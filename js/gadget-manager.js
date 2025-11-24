@@ -1,5 +1,6 @@
 import { miningData } from './data-manager.js';
 import { updateBreakabilityChart, updateMarker } from './chart-manager.js';
+import { saveSelectedGadget, loadSelectedGadgetId } from './storage-manager.js';
 
 export let selectedGadget = null;
 
@@ -23,6 +24,15 @@ export function setupGadgetUI() {
         select.appendChild(option);
     });
 
+    // Load saved gadget selection
+    const savedGadgetId = loadSelectedGadgetId();
+    if (savedGadgetId) {
+        selectedGadget = miningData.gadgets.find(g => g.id === savedGadgetId);
+        if (selectedGadget) {
+            select.value = savedGadgetId;
+        }
+    }
+
     // Handle gadget selection
     select.addEventListener('change', (e) => {
         const gadgetId = e.target.value;
@@ -31,6 +41,7 @@ export function setupGadgetUI() {
         } else {
             selectedGadget = miningData.gadgets.find(g => g.id.toString() === gadgetId);
         }
+        saveSelectedGadget(selectedGadget);
         updateBreakabilityChart();
         updateMarker(); // Update marker and power calculations
     });

@@ -1,10 +1,11 @@
 import { miningData, cleanLaserName } from './data-manager.js';
 import { selectedLaserheads } from './laserhead-manager.js';
 import { calculateTotalPower, calculateResistanceModifier, computeCurve, computeMassAtResistance, distributePowerAcrossLasers } from './calculations.js';
+import { saveOperatorSeatMode, loadOperatorSeatMode } from './storage-manager.js';
 
 let chart = null;
 let marker = null;
-let operatorSeatMode = false;
+let operatorSeatMode = loadOperatorSeatMode() ?? false;
 let markerPosition = null; // Store last marker position for animation
 
 // Helper function to get CSS variable colors
@@ -50,7 +51,7 @@ export function setupChart() {
                     position: 'bottom',
                     title: { 
                         display: true, 
-                        text: 'Base Resistance',
+                        text: operatorSeatMode ? 'Effective Resistance' : 'Base Resistance',
                         font: {
                             size: 14,
                             weight: 'bold'
@@ -226,13 +227,14 @@ export function setupChart() {
         if (y >= titleY - titleHeight / 2 && y <= titleY + titleHeight / 2 &&
             x >= titleCenterX - titleWidth && x <= titleCenterX + titleWidth) {
             operatorSeatMode = !operatorSeatMode;
+            saveOperatorSeatMode(operatorSeatMode);
             const resistanceText = operatorSeatMode ? 'Effective Resistance' : 'Base Resistance';
             chart.options.scales.x.title.text = resistanceText;
             
             // Update resistance input label
             const resistanceLabel = document.getElementById('resistanceLabel');
             if (resistanceLabel) {
-                resistanceLabel.textContent = resistanceText + ' (%):';
+                resistanceLabel.textContent = resistanceText + ' (%)';
             }
             
             updateBreakabilityChart();
@@ -268,6 +270,12 @@ export function setupChart() {
     if (massInput && resistanceInput) {
         massInput.addEventListener('input', updateMarker);
         resistanceInput.addEventListener('input', updateMarker);
+    }
+    
+    // Initialize resistance label with saved mode
+    const resistanceLabel = document.getElementById('resistanceLabel');
+    if (resistanceLabel) {
+        resistanceLabel.textContent = (operatorSeatMode ? 'Effective Resistance' : 'Base Resistance') + ' (%):';
     }
     
     // Ensure colors are set correctly after initialization

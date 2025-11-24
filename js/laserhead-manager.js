@@ -9,6 +9,7 @@ import {
 import { updateBreakabilityChart } from './chart-manager.js';
 import { isActiveModule } from './module-manager.js';
 import { calculateAttributeValue, createSyntheticAttribute } from './calculations.js';
+import { saveLaserSetup, loadLaserSetup, saveActiveSizes, loadActiveSizes } from './storage-manager.js';
 import { 
     generateLaserheadCardHTML,
     generateAttributeRow,
@@ -25,8 +26,22 @@ let activeSizes = new Set(["1","2"]); // Only S1/S2 lasers
 
 export function setupLaserheadUI() {
     setupLaserheadModal();
+    
+    // Load saved active sizes
+    const savedSizes = loadActiveSizes();
+    if (savedSizes) {
+        activeSizes = savedSizes;
+    }
+    
     setupSizeFilters();
     filteredLaserheads = miningData.laserheads;
+    
+    // Load saved laser setup
+    const savedSetup = loadLaserSetup();
+    if (savedSetup && Array.isArray(savedSetup)) {
+        selectedLaserheads = savedSetup;
+        renderSelectedLaserheads();
+    }
 }
 
 function setupSizeFilters() {
@@ -45,6 +60,7 @@ function setupSizeFilters() {
                 activeSizes.add(size);
                 btn.classList.add("active");
             }
+            saveActiveSizes(activeSizes);
             renderLaserheadCards();
         });
     });
@@ -110,6 +126,7 @@ export function removeLaserhead(idx) {
     if (idx >= 0 && idx < selectedLaserheads.length) {
         selectedLaserheads.splice(idx, 1);
         renderSelectedLaserheads();
+        saveLaserSetup(selectedLaserheads);
     }
 }
 
@@ -209,6 +226,7 @@ function selectLaserhead(id) {
     }
     
     renderSelectedLaserheads();
+    saveLaserSetup(selectedLaserheads);
     const modal = document.getElementById("laserheadModal");
     if (modal) modal.classList.add("hidden");
     
@@ -244,6 +262,7 @@ function addNameEditingHandlers(container) {
                 this.textContent = this.dataset.originalName;
             } else {
                 selectedLaserheads[idx].customName = newName;
+                saveLaserSetup(selectedLaserheads);
             }
         });
 

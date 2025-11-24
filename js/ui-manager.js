@@ -13,6 +13,7 @@ import {
 } from './module-manager.js';
 import { toggleModule } from './laserhead-manager.js';
 import { updateMarker, updateBreakabilityChart, updateChartColors } from './chart-manager.js';
+import { clearAllData } from './storage-manager.js';
 
 export function equalizeCardDimensions(cards) {
     // Reset any previous fixed dimensions
@@ -81,6 +82,7 @@ export function setupLaserheadButtons() {
     const displayBtn = document.getElementById("displayOptionsBtn");
     const closeDisplayBtn = document.getElementById("closeDisplayOptionsBtn");
     const closeModuleBtn = document.getElementById("closeModuleModalBtn");
+    const clearCacheBtn = document.getElementById("clearCacheBtn");
 
     if (addBtn) {
         addBtn.addEventListener("click", () => {
@@ -117,6 +119,16 @@ export function setupLaserheadButtons() {
         closeModuleBtn.addEventListener("click", () => {
             const modal = document.getElementById("moduleModal");
             modal.classList.add("hidden");
+        });
+    }
+
+    if (clearCacheBtn) {
+        clearCacheBtn.addEventListener("click", () => {
+            if (confirm("Are you sure you want to clear all saved data? This will reset your laser setups, filters, and preferences to defaults.")) {
+                clearAllData();
+                alert("All saved data has been cleared. The page will now reload.");
+                location.reload();
+            }
         });
     }
 }

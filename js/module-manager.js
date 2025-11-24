@@ -41,7 +41,6 @@ export function removeModule(laserIdx, moduleIdx) {
         
         // Update the display
         renderSelectedLaserheads();
-        updateBreakabilityChart();
     }
 }
 
@@ -67,8 +66,6 @@ export function toggleModule(laserIdx, moduleIdx) {
     if (moduleTable) {
         moduleTable.classList.toggle('inactive', isCurrentlyActive);
     }
-
-    updateBreakabilityChart();
 }
 
 export function isActiveModule(module) {
@@ -271,7 +268,6 @@ function selectModule(id) {
             
             laserhead.modules[currentModuleSlot] = { ...module };
             renderSelectedLaserheads();
-            updateBreakabilityChart();
         }
     }
 }

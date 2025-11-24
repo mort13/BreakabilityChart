@@ -110,7 +110,6 @@ export function removeLaserhead(idx) {
     if (idx >= 0 && idx < selectedLaserheads.length) {
         selectedLaserheads.splice(idx, 1);
         renderSelectedLaserheads();
-        updateBreakabilityChart();
     }
 }
 

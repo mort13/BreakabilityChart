@@ -399,9 +399,14 @@
         "item_uuid": "fb3be543-707b-4582-a25b-c118325fc024",
         "attribute_name": "Volume",
         "value": "10,387",
-        "unit": "\u00b5SCU",
+        "unit": "µSCU",
         "date_added": 1747561644,
         "date_modified": 0
+      },
+      {
+        "attribute_name": "Tier",
+        "value": "1",
+        "unit": ""
       }
     ]
   },
@@ -777,9 +782,14 @@
         "item_uuid": "e2647306-e5d7-452a-8af6-d7141b540a6b",
         "attribute_name": "Volume",
         "value": "10,387",
-        "unit": "\u00b5SCU",
+        "unit": "µSCU",
         "date_added": 1747561713,
         "date_modified": 0
+      },
+      {
+        "attribute_name": "Tier",
+        "value": "2",
+        "unit": ""
       }
     ]
   },
@@ -987,9 +997,14 @@
         "item_uuid": "6ebc1ebe-3058-4d41-b45b-6022f322d623",
         "attribute_name": "Volume",
         "value": "13,147",
-        "unit": "\u00b5SCU",
+        "unit": "µSCU",
         "date_added": 1747561767,
         "date_modified": 1747561776
+      },
+      {
+        "attribute_name": "Tier",
+        "value": "3",
+        "unit": ""
       }
     ]
   },
@@ -1197,9 +1212,14 @@
         "item_uuid": "bb54a97f-bdfb-4772-91a1-7273d88bec19",
         "attribute_name": "Volume",
         "value": "6,984",
-        "unit": "\u00b5SCU",
+        "unit": "µSCU",
         "date_added": 1747561920,
         "date_modified": 0
+      },
+      {
+        "attribute_name": "Tier",
+        "value": "2",
+        "unit": ""
       }
     ]
   },
@@ -1396,6 +1416,11 @@
         "unit": "",
         "date_added": 0,
         "date_modified": 1745118076
+      },
+      {
+        "attribute_name": "Tier",
+        "value": "3",
+        "unit": ""
       }
     ]
   },
@@ -1603,9 +1628,14 @@
         "item_uuid": "e8864c48-6cd1-49e8-95ba-91912e321f35",
         "attribute_name": "Volume",
         "value": "6,984",
-        "unit": "\u00b5SCU",
+        "unit": "µSCU",
         "date_added": 1747561850,
         "date_modified": 0
+      },
+      {
+        "attribute_name": "Tier",
+        "value": "1",
+        "unit": ""
       }
     ]
   },
@@ -1813,7 +1843,7 @@
         "item_uuid": "6c072263-8f32-4ca1-b64b-37d820b0786f",
         "attribute_name": "Volume",
         "value": "5,998",
-        "unit": "\u00b5SCU",
+        "unit": "µSCU",
         "date_added": 1747560970,
         "date_modified": 1747561325
       }
@@ -2023,7 +2053,7 @@
         "item_uuid": "a133320c-1cd0-4622-99dd-715924d6f928",
         "attribute_name": "Volume",
         "value": "5,699",
-        "unit": "\u00b5SCU",
+        "unit": "µSCU",
         "date_added": 1747561076,
         "date_modified": 1747561274
       }
@@ -2429,9 +2459,14 @@
         "item_uuid": "44b6d85a-ad86-479b-8cd9-5b3d9ab9eddc",
         "attribute_name": "Volume",
         "value": "7,708",
-        "unit": "\u00b5SCU",
+        "unit": "µSCU",
         "date_added": 1747562074,
         "date_modified": 0
+      },
+      {
+        "attribute_name": "Tier",
+        "value": "1",
+        "unit": ""
       }
     ]
   },
@@ -2628,6 +2663,11 @@
         "unit": "",
         "date_added": 0,
         "date_modified": 1745118062
+      },
+      {
+        "attribute_name": "Tier",
+        "value": "2",
+        "unit": ""
       }
     ]
   },
@@ -2835,9 +2875,14 @@
         "item_uuid": "2ceb0de9-105b-434e-a152-8af1fd1660d0",
         "attribute_name": "Volume",
         "value": "7,710",
-        "unit": "\u00b5SCU",
+        "unit": "µSCU",
         "date_added": 1747562142,
         "date_modified": 0
+      },
+      {
+        "attribute_name": "Tier",
+        "value": "3",
+        "unit": ""
       }
     ]
   },
@@ -3045,7 +3090,7 @@
         "item_uuid": "4af4857b-b564-4448-afbc-820ff288c0af",
         "attribute_name": "Volume",
         "value": "5,699",
-        "unit": "\u00b5SCU",
+        "unit": "µSCU",
         "date_added": 1747561135,
         "date_modified": 1747561246
       }
@@ -3255,7 +3300,7 @@
         "item_uuid": "1bb6ee6d-3930-4c03-b6c6-38aad3a4703b",
         "attribute_name": "Volume",
         "value": "10,644",
-        "unit": "\u00b5SCU",
+        "unit": "µSCU",
         "date_added": 1747561206,
         "date_modified": 0
       }
@@ -3465,7 +3510,7 @@
         "item_uuid": "46643b07-bb39-4ac1-83e4-d428f0c01a75",
         "attribute_name": "Volume",
         "value": "10,644",
-        "unit": "\u00b5SCU",
+        "unit": "µSCU",
         "date_added": 1747561490,
         "date_modified": 0
       }
@@ -3675,7 +3720,7 @@
         "item_uuid": "47ba04b0-010b-47cd-9f7d-209e2ec190b9",
         "attribute_name": "Volume",
         "value": "5,699",
-        "unit": "\u00b5SCU",
+        "unit": "µSCU",
         "date_added": 1747561551,
         "date_modified": 0
       }
@@ -3885,9 +3930,14 @@
         "item_uuid": "c9944e4b-d911-4f92-9840-1a078659b123",
         "attribute_name": "Volume",
         "value": "9,492",
-        "unit": "\u00b5SCU",
+        "unit": "µSCU",
         "date_added": 1747562341,
         "date_modified": 0
+      },
+      {
+        "attribute_name": "Tier",
+        "value": "2",
+        "unit": ""
       }
     ]
   },
@@ -4095,9 +4145,14 @@
         "item_uuid": "54f4471f-592d-49c1-a12f-fb24c4771ab2",
         "attribute_name": "Volume",
         "value": "10,521",
-        "unit": "\u00b5SCU",
+        "unit": "µSCU",
         "date_added": 1747562389,
         "date_modified": 0
+      },
+      {
+        "attribute_name": "Tier",
+        "value": "3",
+        "unit": ""
       }
     ]
   },
@@ -4294,6 +4349,11 @@
         "unit": "",
         "date_added": 0,
         "date_modified": 1745118077
+      },
+      {
+        "attribute_name": "Tier",
+        "value": "1",
+        "unit": ""
       }
     ]
   },
@@ -4501,9 +4561,14 @@
         "item_uuid": "586a6f24-c94f-4cfc-9370-0df8a5ed3fe2",
         "attribute_name": "Volume",
         "value": "4,561",
-        "unit": "\u00b5SCU",
+        "unit": "µSCU",
         "date_added": 1747562439,
         "date_modified": 0
+      },
+      {
+        "attribute_name": "Tier",
+        "value": "1",
+        "unit": ""
       }
     ]
   },
@@ -4711,9 +4776,14 @@
         "item_uuid": "c60c2615-ec40-491b-9d60-adddf88782f0",
         "attribute_name": "Volume",
         "value": "4,918",
-        "unit": "\u00b5SCU",
+        "unit": "µSCU",
         "date_added": 1747562477,
         "date_modified": 0
+      },
+      {
+        "attribute_name": "Tier",
+        "value": "2",
+        "unit": ""
       }
     ]
   },
@@ -4910,6 +4980,11 @@
         "unit": "",
         "date_added": 0,
         "date_modified": 1745118081
+      },
+      {
+        "attribute_name": "Tier",
+        "value": "3",
+        "unit": ""
       }
     ]
   },
@@ -5117,9 +5192,14 @@
         "item_uuid": "37d62503-f13e-4f41-8ba1-7a3a692dd79f",
         "attribute_name": "Volume",
         "value": "5,966",
-        "unit": "\u00b5SCU",
+        "unit": "µSCU",
         "date_added": 1747562535,
         "date_modified": 0
+      },
+      {
+        "attribute_name": "Tier",
+        "value": "1",
+        "unit": ""
       }
     ]
   },
@@ -5327,9 +5407,14 @@
         "item_uuid": "79a47fc7-4950-41a8-b58d-aa3a6b7f686e",
         "attribute_name": "Volume",
         "value": "6,917",
-        "unit": "\u00b5SCU",
+        "unit": "µSCU",
         "date_added": 1747562624,
         "date_modified": 0
+      },
+      {
+        "attribute_name": "Tier",
+        "value": "2",
+        "unit": ""
       }
     ]
   },
@@ -5526,6 +5611,11 @@
         "unit": "",
         "date_added": 0,
         "date_modified": 1741975896
+      },
+      {
+        "attribute_name": "Tier",
+        "value": "3",
+        "unit": ""
       }
     ]
   }

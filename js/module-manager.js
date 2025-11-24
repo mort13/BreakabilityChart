@@ -13,10 +13,12 @@ import { updateBreakabilityChart } from './chart-manager.js';
 let currentLaserheadIndex = null;
 let currentModuleSlot = null;
 let activeModuleTypes = new Set(["active", "passive"]); // Show both types by default
+let activeTiers = new Set([1, 2, 3]); // Show all tiers by default
 
 export function setupModuleUI() {
     setupModuleModal();
     setupModuleTypeFilters();
+    setupTierFilters();
 }
 
 export function showModuleSelection(laserIdx, slotIdx) {
@@ -154,6 +156,34 @@ function setupModuleTypeFilters() {
                 activeModuleTypes.add(type);
                 btn.classList.add("active");
             }
+            
+            // Show/hide tier filters based on whether passive is selected
+            const tierFilterContainer = document.getElementById('tierFilterButtons');
+            if (tierFilterContainer) {
+                tierFilterContainer.style.display = activeModuleTypes.has('passive') ? 'flex' : 'none';
+            }
+            
+            renderModuleCards();
+        });
+    });
+}
+
+function setupTierFilters() {
+    document.querySelectorAll(".tierFilter").forEach(btn => {
+        const tier = parseInt(btn.dataset.tier);
+        
+        if (activeTiers.has(tier)) {
+            btn.classList.add("active");
+        }
+        
+        btn.addEventListener("click", () => {
+            if(activeTiers.has(tier)) {
+                activeTiers.delete(tier);
+                btn.classList.remove("active");
+            } else {
+                activeTiers.add(tier);
+                btn.classList.add("active");
+            }
             renderModuleCards();
         });
     });
@@ -163,11 +193,34 @@ export function renderModuleCards() {
     const container = document.getElementById('moduleCards');
     container.innerHTML = '';
     
-    // Filter modules based on active/passive selection
+    // Show/hide tier filters based on current selection
+    const tierFilterContainer = document.getElementById('tierFilterButtons');
+    if (tierFilterContainer) {
+        tierFilterContainer.style.display = activeModuleTypes.has('passive') ? 'flex' : 'none';
+    }
+    
+    // Filter modules based on active/passive and tier selection
     const filteredModules = miningData.modules.filter(module => {
         const isActive = isActiveModule(module);
         const moduleType = isActive ? "active" : "passive";
-        return activeModuleTypes.has(moduleType);
+        
+        // Check if module type matches filter
+        if (!activeModuleTypes.has(moduleType)) {
+            return false;
+        }
+        
+        // For passive modules, also check tier
+        if (!isActive) {
+            const tierAttr = module.attributes.find(attr => attr.attribute_name === 'Tier');
+            if (tierAttr) {
+                const tier = parseInt(tierAttr.value);
+                if (!activeTiers.has(tier)) {
+                    return false;
+                }
+            }
+        }
+        
+        return true;
     });
     
     filteredModules.forEach(module => {

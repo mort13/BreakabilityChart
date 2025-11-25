@@ -324,8 +324,8 @@ export function updateBreakabilityChart() {
     for (let i = 0; i < selectedLaserheads.length; i++) {
         const laserhead = selectedLaserheads[i];
         
-        // Get active modules
-        const activeModules = laserhead.modules?.filter(m => m.isActive !== false) || [];
+        // Get active modules (filter out null placeholders first)
+        const activeModules = laserhead.modules?.filter(m => m && m.isActive !== false) || [];
 
         // Calculate values for this laser
         const maxP = calculateTotalPower(laserhead, activeModules, true);
@@ -652,7 +652,7 @@ function calculateRequiredPowerDisplay(mass, resistance) {
     
     // Build list of lasers with their parameters
     const laserParameters = selectedLaserheads.map((laserhead) => {
-        const activeModules = laserhead.modules?.filter(m => m.isActive !== false) || [];
+        const activeModules = laserhead.modules?.filter(m => m && m.isActive !== false) || [];
         const resistanceMod = operatorSeatMode ? 1 : calculateResistanceModifier(laserhead, activeModules, selectedGadget);
         
         return {

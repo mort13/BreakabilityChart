@@ -12,198 +12,153 @@ const STORAGE_KEYS = {
 };
 
 /**
+ * Generic save function for localStorage
+ * @param {string} key - Storage key
+ * @param {*} data - Data to save
+ * @param {Function} transform - Optional transform function before saving
+ */
+function saveToStorage(key, data, transform = null) {
+    try {
+        const toSave = transform ? transform(data) : data;
+        localStorage.setItem(key, JSON.stringify(toSave));
+    } catch (e) {
+        console.warn(`Failed to save ${key}:`, e);
+    }
+}
+
+/**
+ * Generic load function from localStorage
+ * @param {string} key - Storage key
+ * @param {Function} transform - Optional transform function after loading
+ * @returns {*} - Loaded data or null
+ */
+function loadFromStorage(key, transform = null) {
+    try {
+        const data = localStorage.getItem(key);
+        if (!data) return null;
+        const parsed = JSON.parse(data);
+        return transform ? transform(parsed) : parsed;
+    } catch (e) {
+        console.warn(`Failed to load ${key}:`, e);
+        return null;
+    }
+}
+
+// Transform functions for Set conversions
+const setToArray = (set) => Array.from(set);
+const arrayToSet = (arr) => new Set(arr);
+
+/**
  * Save laser setup to localStorage
  */
 export function saveLaserSetup(selectedLaserheads) {
-    try {
-        const data = JSON.stringify(selectedLaserheads);
-        localStorage.setItem(STORAGE_KEYS.LASER_SETUP, data);
-    } catch (e) {
-        console.warn('Failed to save laser setup:', e);
-    }
+    saveToStorage(STORAGE_KEYS.LASER_SETUP, selectedLaserheads);
 }
 
 /**
  * Load laser setup from localStorage
  */
 export function loadLaserSetup() {
-    try {
-        const data = localStorage.getItem(STORAGE_KEYS.LASER_SETUP);
-        return data ? JSON.parse(data) : null;
-    } catch (e) {
-        console.warn('Failed to load laser setup:', e);
-        return null;
-    }
+    return loadFromStorage(STORAGE_KEYS.LASER_SETUP);
 }
 
 /**
  * Save display attributes
  */
 export function saveDisplayAttributes(attributes) {
-    try {
-        localStorage.setItem(STORAGE_KEYS.DISPLAY_ATTRIBUTES, JSON.stringify(attributes));
-    } catch (e) {
-        console.warn('Failed to save display attributes:', e);
-    }
+    saveToStorage(STORAGE_KEYS.DISPLAY_ATTRIBUTES, attributes);
 }
 
 /**
  * Load display attributes
  */
 export function loadDisplayAttributes() {
-    try {
-        const data = localStorage.getItem(STORAGE_KEYS.DISPLAY_ATTRIBUTES);
-        return data ? JSON.parse(data) : null;
-    } catch (e) {
-        console.warn('Failed to load display attributes:', e);
-        return null;
-    }
+    return loadFromStorage(STORAGE_KEYS.DISPLAY_ATTRIBUTES);
 }
 
 /**
  * Save module display attributes
  */
 export function saveModuleDisplayAttributes(attributes) {
-    try {
-        localStorage.setItem(STORAGE_KEYS.MODULE_DISPLAY_ATTRIBUTES, JSON.stringify(Array.from(attributes)));
-    } catch (e) {
-        console.warn('Failed to save module display attributes:', e);
-    }
+    saveToStorage(STORAGE_KEYS.MODULE_DISPLAY_ATTRIBUTES, attributes, setToArray);
 }
 
 /**
  * Load module display attributes
  */
 export function loadModuleDisplayAttributes() {
-    try {
-        const data = localStorage.getItem(STORAGE_KEYS.MODULE_DISPLAY_ATTRIBUTES);
-        return data ? new Set(JSON.parse(data)) : null;
-    } catch (e) {
-        console.warn('Failed to load module display attributes:', e);
-        return null;
-    }
+    return loadFromStorage(STORAGE_KEYS.MODULE_DISPLAY_ATTRIBUTES, arrayToSet);
 }
 
 /**
  * Save active sizes filter
  */
 export function saveActiveSizes(sizes) {
-    try {
-        localStorage.setItem(STORAGE_KEYS.ACTIVE_SIZES, JSON.stringify(Array.from(sizes)));
-    } catch (e) {
-        console.warn('Failed to save active sizes:', e);
-    }
+    saveToStorage(STORAGE_KEYS.ACTIVE_SIZES, sizes, setToArray);
 }
 
 /**
  * Load active sizes filter
  */
 export function loadActiveSizes() {
-    try {
-        const data = localStorage.getItem(STORAGE_KEYS.ACTIVE_SIZES);
-        return data ? new Set(JSON.parse(data)) : null;
-    } catch (e) {
-        console.warn('Failed to load active sizes:', e);
-        return null;
-    }
+    return loadFromStorage(STORAGE_KEYS.ACTIVE_SIZES, arrayToSet);
 }
 
 /**
  * Save active module types filter
  */
 export function saveActiveModuleTypes(types) {
-    try {
-        localStorage.setItem(STORAGE_KEYS.ACTIVE_MODULE_TYPES, JSON.stringify(Array.from(types)));
-    } catch (e) {
-        console.warn('Failed to save active module types:', e);
-    }
+    saveToStorage(STORAGE_KEYS.ACTIVE_MODULE_TYPES, types, setToArray);
 }
 
 /**
  * Load active module types filter
  */
 export function loadActiveModuleTypes() {
-    try {
-        const data = localStorage.getItem(STORAGE_KEYS.ACTIVE_MODULE_TYPES);
-        return data ? new Set(JSON.parse(data)) : null;
-    } catch (e) {
-        console.warn('Failed to load active module types:', e);
-        return null;
-    }
+    return loadFromStorage(STORAGE_KEYS.ACTIVE_MODULE_TYPES, arrayToSet);
 }
 
 /**
  * Save active tiers filter
  */
 export function saveActiveTiers(tiers) {
-    try {
-        localStorage.setItem(STORAGE_KEYS.ACTIVE_TIERS, JSON.stringify(Array.from(tiers)));
-    } catch (e) {
-        console.warn('Failed to save active tiers:', e);
-    }
+    saveToStorage(STORAGE_KEYS.ACTIVE_TIERS, tiers, setToArray);
 }
 
 /**
  * Load active tiers filter
  */
 export function loadActiveTiers() {
-    try {
-        const data = localStorage.getItem(STORAGE_KEYS.ACTIVE_TIERS);
-        return data ? new Set(JSON.parse(data)) : null;
-    } catch (e) {
-        console.warn('Failed to load active tiers:', e);
-        return null;
-    }
+    return loadFromStorage(STORAGE_KEYS.ACTIVE_TIERS, arrayToSet);
 }
 
 /**
  * Save selected gadget
  */
 export function saveSelectedGadget(gadget) {
-    try {
-        // Only save the gadget ID to keep storage small
-        const gadgetId = gadget ? gadget.id : null;
-        localStorage.setItem(STORAGE_KEYS.SELECTED_GADGET, JSON.stringify(gadgetId));
-    } catch (e) {
-        console.warn('Failed to save selected gadget:', e);
-    }
+    const gadgetId = gadget ? gadget.id : null;
+    saveToStorage(STORAGE_KEYS.SELECTED_GADGET, gadgetId);
 }
 
 /**
  * Load selected gadget ID
  */
 export function loadSelectedGadgetId() {
-    try {
-        const data = localStorage.getItem(STORAGE_KEYS.SELECTED_GADGET);
-        return data ? JSON.parse(data) : null;
-    } catch (e) {
-        console.warn('Failed to load selected gadget:', e);
-        return null;
-    }
+    return loadFromStorage(STORAGE_KEYS.SELECTED_GADGET);
 }
 
 /**
  * Save operator seat mode
  */
 export function saveOperatorSeatMode(mode) {
-    try {
-        localStorage.setItem(STORAGE_KEYS.OPERATOR_SEAT_MODE, JSON.stringify(mode));
-    } catch (e) {
-        console.warn('Failed to save operator seat mode:', e);
-    }
+    saveToStorage(STORAGE_KEYS.OPERATOR_SEAT_MODE, mode);
 }
 
 /**
  * Load operator seat mode
  */
 export function loadOperatorSeatMode() {
-    try {
-        const data = localStorage.getItem(STORAGE_KEYS.OPERATOR_SEAT_MODE);
-        return data ? JSON.parse(data) : null;
-    } catch (e) {
-        console.warn('Failed to load operator seat mode:', e);
-        return null;
-    }
+    return loadFromStorage(STORAGE_KEYS.OPERATOR_SEAT_MODE);
 }
 
 /**

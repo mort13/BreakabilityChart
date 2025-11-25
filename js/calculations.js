@@ -173,9 +173,19 @@ function isPassiveModule(module) {
  * @param {number} value - Value to round
  * @returns {number} - Rounded value
  */
-function roundValue(value) {
+export function roundValue(value) {
     const rounded = Math.round(value * 100) / 100;
     return rounded % 1 === 0 ? Math.round(rounded) : rounded;
+}
+
+/**
+ * Round and format value to string for HTML display
+ * @param {number} value - Value to round and format
+ * @returns {string} - Rounded value as string
+ */
+export function roundAndFormatValue(value) {
+    const rounded = Math.round(value * 100) / 100;
+    return rounded % 1 === 0 ? Math.round(rounded).toString() : rounded.toString();
 }
 
 /**
@@ -222,7 +232,7 @@ export function calculateResistanceModifier(laserhead, modules, gadget = null) {
     
     // Check if any modules have resistance modifiers
     const hasResistanceModules = modules.some(m => 
-        m.attributes?.some(a => a.attribute_name === "Resistance")
+        m && m.attributes?.some(a => a.attribute_name === "Resistance")
     );
     
     // If no base resistance but modules have it, start from 0%
@@ -241,6 +251,7 @@ export function calculateResistanceModifier(laserhead, modules, gadget = null) {
     
     // Apply module modifiers
     modules.forEach(module => {
+        if (!module) return;
         const resMod = module.attributes.find(attr => 
             attr.attribute_name === "Resistance"
         );
@@ -299,19 +310,21 @@ export function computeCurve(power, resistanceModifier) {
 /**
  * Create synthetic attribute when laserhead doesn't have it but module modifies it
  * @param {string} attrName - Attribute name
- * @param {Array} modules - Array of modules
+ * @param {Array} modules - Array of modules (may contain nulls)
  * @returns {Object|null} - Synthetic attribute or null
  */
 export function createSyntheticAttribute(attrName, modules) {
-    const moduleModifiers = getModuleModifiers(attrName, modules);
+    // Filter out null modules for calculations
+    const validModules = modules.filter(m => m);
+    const moduleModifiers = getModuleModifiers(attrName, validModules);
     
     if (moduleModifiers.length === 0) return null;
     
     let moduleAttr;
     if (attrName === "Maximum Laser Power" || attrName === "Minimum Laser Power") {
-        moduleAttr = modules[0].attributes.find(a => a.attribute_name === "Mining Laser Power");
+        moduleAttr = validModules[0].attributes.find(a => a.attribute_name === "Mining Laser Power");
     } else {
-        moduleAttr = modules[0].attributes.find(a => a.attribute_name === attrName);
+        moduleAttr = validModules[0].attributes.find(a => a.attribute_name === attrName);
     }
     
     if (!moduleAttr) return null;

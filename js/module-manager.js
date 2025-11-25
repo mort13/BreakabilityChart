@@ -43,13 +43,9 @@ export function showModuleSelection(laserIdx, slotIdx) {
 export function removeModule(laserIdx, moduleIdx) {
     const laserhead = selectedLaserheads[laserIdx];
     if (laserhead && Array.isArray(laserhead.modules)) {
-        // Remove the module
+        // Remove the module by setting it to null
+        // Keep the null to preserve slot indices
         laserhead.modules[moduleIdx] = null;
-        
-        // Clean up null entries at the end of the array
-        while (laserhead.modules.length > 0 && laserhead.modules[laserhead.modules.length - 1] === null) {
-            laserhead.modules.pop();
-        }
         
         // Update the display
         renderSelectedLaserheads();

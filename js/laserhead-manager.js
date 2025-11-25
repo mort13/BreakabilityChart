@@ -217,12 +217,19 @@ function selectLaserhead(id) {
         return;
     }
     
+    // Get the number of module slots for this laserhead
+    const moduleSlotAttr = laserhead.attributes?.find(attr => attr.attribute_name === "Module Slots");
+    const numModuleSlots = moduleSlotAttr ? parseInt(moduleSlotAttr.value, 10) : 3;
+    
+    // Initialize modules array with null placeholders to maintain stable indices
+    const initializedModules = Array(numModuleSlots).fill(null);
+    
     // If currentLaserheadIndex is set (meaning we're replacing), replace at that index
     if (typeof currentLaserheadIndex === 'number' && currentLaserheadIndex >= 0) {
-        selectedLaserheads[currentLaserheadIndex] = { ...laserhead, modules: [] };
+        selectedLaserheads[currentLaserheadIndex] = { ...laserhead, modules: initializedModules };
     } else {
         // Otherwise add to the end
-        selectedLaserheads.push({ ...laserhead, modules: [] });
+        selectedLaserheads.push({ ...laserhead, modules: initializedModules });
     }
     
     renderSelectedLaserheads();
@@ -387,7 +394,7 @@ export function renderSelectedLaserheads() {
 
         const moduleSectionHTML = `<div class="module-section">
                         ${Array(numModuleSlots).fill(null).map((_, i) => {
-                            const module = laserhead.modules[i];
+                            const module = laserhead.modules?.[i];
                             if (module) {
                                 const moduleAttrs = generateModuleAttributeRows(module, window.moduleDisplayAttributes);
                                 return generateFilledModuleSlotHTML(module, moduleAttrs, idx, i, isActiveModule(module));

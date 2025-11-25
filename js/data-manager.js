@@ -135,17 +135,9 @@ export function calculateCombinedValue(baseValue, moduleValue, unit, moduleActiv
         if (unit === '%') {
             // Standard calculation for other percentage attributes
             const baseFactor = 1 + (base / 100);
-            console.log(`Base ${base}% to factor: ${baseFactor}`);
-            
             const modFactor = 1 + (mod / 100);
-            console.log(`Module ${mod}% to factor: ${modFactor}`);
-            
             const combinedFactor = baseFactor * modFactor;
-            console.log(`Combined factor: ${combinedFactor}`);
-            
             const finalPercentage = (combinedFactor - 1) * 100;
-            console.log(`Final percentage: ${finalPercentage}%`);
-            
             return finalPercentage;
         } else if (unit === 'MW') {
             const effectiveBase = base === 0 ? 1 : base;

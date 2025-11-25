@@ -1,5 +1,6 @@
 // Pure HTML generation functions - no DOM manipulation or calculations
 import { cleanLaserName, getUnit, MODULE_ATTRIBUTE_ORDER } from './data-manager.js';
+import { roundAndFormatValue } from './calculations.js';
 
 /**
  * Generate HTML for laserhead card in selection modal
@@ -42,8 +43,7 @@ export function generateModuleCardHTML(module, visibleAttributes) {
             let value = attr.value;
             const numValue = parseFloat(value);
             if (!isNaN(numValue)) {
-                const rounded = Math.round(numValue * 100) / 100;
-                value = rounded % 1 === 0 ? Math.round(rounded).toString() : rounded.toString();
+                value = roundAndFormatValue(numValue);
             }
             
             const unit = getUnit(attr) || attr.unit || '';
@@ -162,8 +162,7 @@ export function generateModuleAttributeRows(module, visibleAttributes) {
             let value = attr.value;
             const numValue = parseFloat(value);
             if (!isNaN(numValue)) {
-                const rounded = Math.round(numValue * 100) / 100;
-                value = rounded % 1 === 0 ? Math.round(rounded).toString() : rounded.toString();
+                value = roundAndFormatValue(numValue);
             }
             
             const unit = attr.unit || '';

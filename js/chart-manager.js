@@ -617,7 +617,7 @@ export function updateMarker() {
                 label: "Marker",
                 data: [newPosition],
                 type: "scatter",
-                backgroundColor: "red",
+                backgroundColor: getCSSColor('--color-accent'),
                 pointRadius: 8,
                 pointHoverRadius: 10
             });

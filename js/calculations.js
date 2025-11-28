@@ -355,14 +355,14 @@ export function calculatePowerPercentage(mass, resistance, laserParameters) {
     let maxPower = laserParameters[0].maxPower;
     let i = 0;
     
-    let powerNeeded = mass * c_mass * (1 + resistance / 100) * effResistanceModifier;
+    let powerNeeded = mass * c_mass * (1 + resistance * effResistanceModifier / 100);
     let powerPercentage = powerNeeded / maxPower;
     
     // Keep adding lasers until we can handle the power needed
     while (powerPercentage > 1 && i < laserParameters.length - 1) {
         i += 1;
         effResistanceModifier *= laserParameters[i].resistanceModifier;
-        powerNeeded = mass * c_mass * (1 + resistance / 100) * effResistanceModifier;
+        powerNeeded = mass * c_mass * (1 + resistance * effResistanceModifier / 100);
         maxPower += laserParameters[i].maxPower;
         powerPercentage = powerNeeded / maxPower;
     }

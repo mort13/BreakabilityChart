@@ -25,8 +25,13 @@
   --color-border: #ddd;
   --color-border-light: #f0f0f0;
   --color-accent: #ff8c42;           /* Argo orange accent */
+  --color-accent-focus: rgba(255, 140, 66, 0.4);  /* Focus ring color */
   --color-text-muted: #808080;
   --color-tab-active: #ff8c42;      /* Argo orange for active tabs */
+  
+  /* Input Colors */
+  --color-bg-input-focus: #ffffff;   /* White background when editing */
+  --color-text-input-focus: #1a1a1a; /* Dark text when editing */
   
   /* Chart Colors */
   --color-chart-axis: #1a1a1a;          /* Dark chart axis borders */
@@ -69,8 +74,13 @@ body.dark-mode {
   --color-border: #3a3a3a;           /* Dark gray borders */
   --color-border-light: #4a4a4a;     /* Slightly lighter borders */
   --color-accent: #ff8c42;           /* Argo orange accent */
+  --color-accent-focus: rgba(255, 140, 66, 0.5);  /* Focus ring color */
   --color-text-muted: #808080;       /* Medium gray for muted text */
   --color-tab-active: #ff8c42;       /* Argo orange for active tabs */
+  
+  /* Input Colors */
+  --color-bg-input-focus: #2a2a2a;   /* Dark background when editing */
+  --color-text-input-focus: #e8e8e8; /* Light text when editing */
   
   /* Chart Colors */
   --color-chart-axis: #ff8c42;       /* Orange axis borders */
@@ -640,8 +650,9 @@ button:hover {
 
 .selected-laserhead .name:focus {
   outline: none;
-  background-color: #fff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.3);
+  background-color: var(--color-bg-input-focus);
+  color: var(--color-text-input-focus);
+  box-shadow: 0 0 0 2px var(--color-accent-focus);
 }
 
 .module-name.clickable {

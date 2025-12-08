@@ -293,6 +293,10 @@ export function renderSelectedLaserheads() {
     // First pass: collect all unique attributes from all selected laserheads and modules
     // Only include attributes that are in the display options
     const allAttributeNames = new Set();
+    
+    // Attributes that should not create synthetic entries (already represented by other attributes)
+    const skipSyntheticAttributes = ['Mining Laser Power']; // Represented by Min/Max Laser Power
+    
     selectedLaserheads.forEach(laserhead => {
         // Add laserhead attributes
         (laserhead.attributes || []).forEach(attr => {
@@ -310,8 +314,10 @@ export function renderSelectedLaserheads() {
             if (module && module.isActive !== false) {
                 (module.attributes || []).forEach(modAttr => {
                     // If module has an attribute value and it's in display options, add it to the collection
+                    // BUT skip attributes that shouldn't create synthetic entries
                     if (modAttr && modAttr.value && modAttr.value !== '0' && modAttr.value.trim() !== '' 
-                        && window.displayAttributes.includes(modAttr.attribute_name)) {
+                        && window.displayAttributes.includes(modAttr.attribute_name)
+                        && !skipSyntheticAttributes.includes(modAttr.attribute_name)) {
                         allAttributeNames.add(modAttr.attribute_name);
                     }
                 });
@@ -349,9 +355,11 @@ export function renderSelectedLaserheads() {
                     // If laserhead doesn't have this attribute but module modifies it
                     // AND it's in display options
                     // AND we haven't already processed this synthetic attribute
+                    // AND it's not in the skip list
                     if (!attrMap.has(modAttr.attribute_name) && modAttr.value && modAttr.value !== '0' && modAttr.value.trim() !== ''
                         && window.displayAttributes.includes(modAttr.attribute_name)
-                        && !processedSyntheticAttrs.has(modAttr.attribute_name)) {
+                        && !processedSyntheticAttrs.has(modAttr.attribute_name)
+                        && !skipSyntheticAttributes.includes(modAttr.attribute_name)) {
                         // Create synthetic attribute with ALL modules, not just one
                         const syntheticAttr = createSyntheticAttribute(modAttr.attribute_name, laserhead.modules || []);
                         if (syntheticAttr) {

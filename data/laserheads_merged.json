@@ -1690,7 +1690,7 @@
         "item_name": "Hofstede-S1 Mining Laser",
         "item_uuid": "077a4a94-6296-4a83-a6c4-f215f7efd1df",
         "attribute_name": "Optimal Charge Window Size",
-        "value": "40",
+        "value": "60",
         "unit": "%",
         "date_added": 0,
         "date_modified": 1745183927

@@ -32,13 +32,13 @@
   --color-chart-axis: #1a1a1a;          /* Dark chart axis borders */
   --color-chart-grid: rgba(255, 140, 66, 0.15);  /* Orange-tinted grid lines */
   
-  /* Plot Colors - Light Mode (vibrant, saturated for white background) */
-  --color-plot-1: rgb(231, 76, 60);    /* strong red */
-  --color-plot-2: rgb(52, 152, 219);   /* bright blue */
-  --color-plot-3: rgb(46, 204, 113);   /* emerald green */
-  --color-plot-4: rgb(230, 126, 34);   /* vivid orange */
-  --color-plot-5: rgb(155, 89, 182);   /* rich purple */
-  --color-plot-6: rgb(241, 196, 15);   /* golden yellow */
+  /* Plot Colors - Light Mode (Colorblind-friendly Wong palette) */
+  --color-plot-1: rgb(0, 114, 178);      /* Blue */
+  --color-plot-2: rgb(230, 159, 0);      /* Orange */
+  --color-plot-3: rgb(0, 158, 115);      /* Bluish green */
+  --color-plot-4: rgb(204, 121, 167);    /* Reddish purple */
+  --color-plot-5: rgb(86, 180, 233);     /* Sky blue */
+  --color-plot-6: rgb(213, 94, 0);       /* Vermillion */
   --color-plot-total: rgb(255, 140, 66);    /* Argo orange for total curve */
 }
 
@@ -76,13 +76,13 @@ body.dark-mode {
   --color-chart-axis: #ff8c42;       /* Orange axis borders */
   --color-chart-grid: rgba(255, 140, 66, 0.12);  /* Orange-tinted grid lines */
   
-  /* Plot Colors - Industrial (vibrant but with metallic tones) */
-  --color-plot-1: rgb(220, 100, 100);   /* Muted red */
-  --color-plot-2: rgb(100, 170, 230);   /* Steel blue */
-  --color-plot-3: rgb(100, 200, 150);   /* Teal green */
-  --color-plot-4: rgb(230, 160, 80);    /* Bronze/copper */
-  --color-plot-5: rgb(180, 140, 220);   /* Muted purple */
-  --color-plot-6: rgb(220, 200, 100);   /* Muted gold */
+  /* Plot Colors - Dark Mode (Colorblind-friendly Wong palette, slightly brighter) */
+  --color-plot-1: rgb(70, 150, 210);     /* Blue */
+  --color-plot-2: rgb(245, 180, 50);     /* Orange */
+  --color-plot-3: rgb(60, 180, 140);     /* Bluish green */
+  --color-plot-4: rgb(220, 145, 185);    /* Reddish purple */
+  --color-plot-5: rgb(120, 200, 245);    /* Sky blue */
+  --color-plot-6: rgb(235, 120, 45);     /* Vermillion */
   --color-plot-total: rgb(200, 200, 200); /* Light gray for total curve */
 }
 

@@ -1,29 +1,52 @@
 // Pure calculation functions - no DOM manipulation
 import { getUnit, calculateCombinedValue } from './data-manager.js';
 
-// Mining constant for mass calculations
-export const c_mass = 0.2;
+// Mining constants
+export const c_mass = 0.2;  // Mass coefficient
+export const c_r = 1;       // Resistance coefficient
+
+/**
+ * Calculate effective resistance after applying laser/module resistance modifier
+ * @param {number} resistance - Rock resistance percentage (0-100)
+ * @param {number} resistanceModifier - Resistance modifier as multiplier (e.g., 0.75 means -25% resistance)
+ * @returns {number} - Effective resistance (0-1)
+ */
+export function computeEffectiveResistance(resistance, resistanceModifier) {
+    // resistanceModifier is already in multiplier form from calculateResistanceModifier
+    // e.g., 0.75 means -25% (reduces resistance), 1.25 means +25% (increases resistance)
+    // r_factor = resistanceModifier (already computed as 1 + r_mod/100)
+    const r_factor = resistanceModifier;
+    return Math.max(0, Math.min(1, (resistance / 100) * r_factor)) * c_r;
+}
 
 /**
  * Calculate mass at a given resistance
+ * Formula: mass = (power * (1 - effective_resistance)) / c_mass
  * @param {number} power - Power value
- * @param {number} resistance - Resistance percentage (0-100)
+ * @param {number} resistance - Rock resistance percentage (0-100)
  * @param {number} resistanceModifier - Resistance modifier multiplier
  * @returns {number} - Calculated mass
  */
 export function computeMassAtResistance(power, resistance, resistanceModifier) {
-    return power / ((1 + (resistance / 100) * resistanceModifier) * c_mass);
+    const effectiveResistance = computeEffectiveResistance(resistance, resistanceModifier);
+    return (power * (1 - effectiveResistance)) / c_mass;
 }
 
 /**
- * Calculate required power for a given mass and resistance
+ * Calculate required raw laser power for a given mass and resistance
+ * Since effective laser power = rawPower * (1 - effective_resistance),
+ * we need more raw power to compensate for the resistance reduction
  * @param {number} mass - Mass value
  * @param {number} resistance - Resistance percentage (0-100)
- * @param {number} resistanceModifier - Resistance modifier multiplier
- * @returns {number} - Required power
+ * @param {number} resistanceModifier - Resistance modifier (e.g., 0.75 = -25%)
+ * @returns {number} - Required raw laser power
  */
-export function computeRequiredPower(mass, resistance, resistanceModifier) {
-    return mass * (1 + (resistance / 100) * resistanceModifier) * c_mass;
+export function computeRequiredPower(mass, resistance = 0, resistanceModifier = 1) {
+    const effectiveResistance = computeEffectiveResistance(resistance, resistanceModifier);
+    // power = (mass * c_mass) / (1 - effective_resistance)
+    const denominator = 1 - effectiveResistance;
+    if (denominator <= 0) return Infinity; // Can't break at 100%+ effective resistance
+    return (mass * c_mass) / denominator;
 }
 
 /**
@@ -308,6 +331,41 @@ export function computeCurve(power, resistanceModifier) {
 }
 
 /**
+ * Compute combined curve data for multiple lasers
+ * Combines power (sum) and resistance modifiers (product) from visible lasers
+ * @param {Array} laserParams - Array of {maxPower, minPower, resistanceModifier, isVisible}
+ * @returns {Object} - {maxData: Array, minData: Array} of {x, y} points
+ */
+export function computeCombinedCurve(laserParams) {
+    const maxData = [];
+    const minData = [];
+    
+    for (let R = 0; R <= 100; R += 0.1) {
+        // Combine power and resistance modifiers from all visible lasers
+        let combinedMaxPower = 0;
+        let combinedMinPower = 0;
+        let combinedResistanceModifier = 1;
+        
+        for (const laser of laserParams) {
+            if (laser.isVisible) {
+                combinedMaxPower += laser.maxPower;
+                combinedMinPower += laser.minPower;
+                combinedResistanceModifier *= laser.resistanceModifier;
+            }
+        }
+        
+        // Calculate total mass with combined power and combined resistance modifier
+        const totalMaxMass = computeMassAtResistance(combinedMaxPower, R, combinedResistanceModifier);
+        const totalMinMass = computeMassAtResistance(combinedMinPower, R, combinedResistanceModifier);
+        
+        maxData.push({ x: R, y: totalMaxMass });
+        minData.push({ x: R, y: totalMinMass });
+    }
+    
+    return { maxData, minData };
+}
+
+/**
  * Create synthetic attribute when laserhead doesn't have it but module modifies it
  * @param {string} attrName - Attribute name
  * @param {Array} modules - Array of modules (may contain nulls)
@@ -346,41 +404,81 @@ export function createSyntheticAttribute(attrName, modules) {
  */
 export function calculatePowerPercentage(mass, resistance, laserParameters) {
     if (laserParameters.length === 0) {
-        return { percentage: 0, usedLasers: 0, insufficient: true };
+        return { percentage: 0, usedLasers: [], insufficient: true };
     }
     
-    // The effective resistance modifier accumulates laser modifiers
-    // Each laser's resistanceModifier already includes gadget effect from calculateResistanceModifier
-    let effResistanceModifier = laserParameters[0].resistanceModifier;
-    let maxPower = laserParameters[0].maxPower;
-    let i = 0;
+    // Generate all possible non-empty subsets of lasers
+    const n = laserParameters.length;
+    const allSubsets = [];
     
-    let powerNeeded = mass * c_mass * (1 + resistance * effResistanceModifier / 100);
-    let powerPercentage = powerNeeded / maxPower;
-    
-    // Keep adding lasers until we can handle the power needed
-    while (powerPercentage > 1 && i < laserParameters.length - 1) {
-        i += 1;
-        effResistanceModifier *= laserParameters[i].resistanceModifier;
-        powerNeeded = mass * c_mass * (1 + resistance * effResistanceModifier / 100);
-        maxPower += laserParameters[i].maxPower;
-        powerPercentage = powerNeeded / maxPower;
+    for (let mask = 1; mask < (1 << n); mask++) {
+        const subset = [];
+        for (let i = 0; i < n; i++) {
+            if (mask & (1 << i)) {
+                subset.push(i);
+            }
+        }
+        allSubsets.push(subset);
     }
     
-    // Check if all lasers at 100% is still insufficient
-    if (powerPercentage > 1) {
-        return { 
-            percentage: 100, 
-            usedLasers: i + 1, 
-            insufficient: true,
-            missingPower: powerNeeded - maxPower
-        };
+    // Sort subsets by size (prefer fewer lasers)
+    allSubsets.sort((a, b) => a.length - b.length);
+    
+    let bestResult = null;
+    
+    for (const subset of allSubsets) {
+        // Calculate combined values for this subset
+        let combinedMaxPower = 0;
+        let combinedResistanceModifier = 1;
+        
+        for (const idx of subset) {
+            combinedMaxPower += laserParameters[idx].maxPower;
+            combinedResistanceModifier *= laserParameters[idx].resistanceModifier;
+        }
+        
+        // Calculate required power for this combination
+        const powerNeeded = computeRequiredPower(mass, resistance, combinedResistanceModifier);
+        
+        // Skip if unbreakable with this combination
+        if (!isFinite(powerNeeded)) {
+            continue;
+        }
+        
+        const powerPercentage = powerNeeded / combinedMaxPower;
+        
+        // Check if this combination can break the rock
+        if (powerPercentage <= 1) {
+            // Found a working combination - return it (already sorted by size, so this is minimal)
+            return { 
+                percentage: powerPercentage * 100, 
+                usedLasers: subset.map(i => laserParameters[i].name || `L${i + 1}`),
+                insufficient: false 
+            };
+        }
+        
+        // Track the best insufficient result (lowest percentage = closest to breaking)
+        if (!bestResult || powerPercentage < bestResult.actualPercentage) {
+            bestResult = {
+                percentage: 100,
+                usedLasers: subset.map(i => laserParameters[i].name || `L${i + 1}`),
+                insufficient: true,
+                missingPower: powerNeeded - combinedMaxPower,
+                actualPercentage: powerPercentage
+            };
+        }
     }
     
+    // No combination could break the rock
+    if (bestResult) {
+        return bestResult;
+    }
+    
+    // All combinations were unbreakable (100%+ effective resistance)
     return { 
-        percentage: powerPercentage * 100, 
-        usedLasers: i + 1, 
-        insufficient: false 
+        percentage: Infinity, 
+        usedLasers: laserParameters.map((laser, i) => laser.name || `L${i + 1}`), 
+        insufficient: true, 
+        unbreakable: true 
     };
 }
 
@@ -394,13 +492,15 @@ export function calculatePowerPercentage(mass, resistance, laserParameters) {
 export function distributePowerAcrossLasers(mass, resistance, lasers) {
     const result = calculatePowerPercentage(mass, resistance, lasers);
     
-    // Build list of laser names
-    const laserNames = [];
-    for (let i = 0; i < result.usedLasers; i++) {
-        laserNames.push(`L${i + 1}`);
+    // Handle unbreakable case (100%+ effective resistance)
+    if (result.unbreakable) {
+        return `<span style="color: red;">Unbreakable at this resistance</span>`;
     }
     
-    let output = `Required lasers: ${laserNames.join(', ')} at ${result.percentage.toFixed(1)}%`;
+    // usedLasers now contains the actual laser names
+    const laserNames = result.usedLasers;
+    
+    let output = `Required: ${laserNames.join(', ')} at ${result.percentage.toFixed(1)}%`;
     
     // If insufficient, show how much more power is needed
     if (result.insufficient) {

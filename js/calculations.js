@@ -2,7 +2,7 @@
 import { getUnit, calculateCombinedValue } from './data-manager.js';
 
 // Mining constants
-export const c_mass = 0.2;  // Mass coefficient
+export const c_mass = 0.175;  // Mass coefficient
 export const c_r = 1;       // Resistance coefficient
 
 /**

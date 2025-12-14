@@ -620,6 +620,28 @@ export function updateMarker() {
     }
 }
 
+/**
+ * Set marker position from OCR-detected values
+ * Also updates the input fields to reflect OCR values
+ * @param {number} mass - Detected mass value
+ * @param {number} resistance - Detected resistance value
+ */
+export function setMarkerFromOCR(mass, resistance) {
+    const massInput = document.getElementById('massInput');
+    const resistanceInput = document.getElementById('resistanceInput');
+    
+    if (massInput && mass !== null && mass > 0) {
+        massInput.value = mass.toFixed(1);
+    }
+    
+    if (resistanceInput && resistance !== null && resistance >= 0 && resistance <= 100) {
+        resistanceInput.value = resistance.toFixed(1);
+    }
+    
+    // Trigger marker update
+    updateMarker();
+}
+
 function calculateRequiredPowerDisplay(mass, resistance) {
     const powerDisplay = document.getElementById('requiredPowerDisplay');
     if (!powerDisplay || !selectedLaserheads || selectedLaserheads.length === 0) {

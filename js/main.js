@@ -4,6 +4,8 @@ import { setupLaserheadUI } from './laserhead-manager.js';
 import { setupModuleUI } from './module-manager.js';
 import { setupTabs, setupLaserheadButtons, setupDarkModeToggle, injectFooterToTabs } from './ui-manager.js';
 import { setupGadgetUI } from './gadget-manager.js';
+import { initOCRUI, updateOCRValues } from './ocr-ui.js';
+import { setMarkerFromOCR } from './chart-manager.js';
 
 // Main initialization
 window.addEventListener("DOMContentLoaded", async () => {
@@ -16,4 +18,12 @@ window.addEventListener("DOMContentLoaded", async () => {
     setupModuleUI();
     setupLaserheadButtons();
     setupGadgetUI();
+    
+    // Initialize OCR with callback to update chart marker
+    initOCRUI((values) => {
+        updateOCRValues(values);
+        if (values.mass !== null && values.resistance !== null) {
+            setMarkerFromOCR(values.mass, values.resistance);
+        }
+    });
 });

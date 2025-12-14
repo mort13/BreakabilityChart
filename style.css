@@ -1090,3 +1090,398 @@ td:first-child {
 .rosenrudel-logo:hover {
   filter: drop-shadow(0 4px 8px rgba(255, 140, 66, 0.3));
 }
+
+/* ===========================
+   OCR PANEL STYLES
+   =========================== */
+.ocr-panel {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  margin-top: 15px;
+  overflow: hidden;
+}
+
+.ocr-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background: var(--color-bg-highlight);
+  border-bottom: 1px solid var(--color-border);
+  font-weight: bold;
+  color: var(--color-text-primary);
+}
+
+.ocr-body {
+  padding: 15px;
+}
+
+.ocr-status {
+  margin-bottom: 10px;
+  color: var(--color-text-muted);
+  font-size: 0.9em;
+}
+
+.ocr-regions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.ocr-values {
+  display: flex;
+  gap: 20px;
+}
+
+.ocr-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ocr-value label {
+  color: var(--color-text-muted);
+  font-size: 0.9em;
+}
+
+.ocr-value span {
+  font-weight: bold;
+  font-size: 1.1em;
+  color: var(--color-accent);
+}
+
+.ocr-btn {
+  padding: 8px 16px;
+  background: var(--color-btn-add);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: filter 0.2s;
+}
+
+.ocr-btn:hover {
+  filter: brightness(1.1);
+}
+
+.ocr-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ocr-btn.active {
+  background: #e74c3c;
+}
+
+.ocr-btn-small {
+  padding: 6px 12px;
+  font-size: 0.85em;
+}
+
+.ocr-btn.region-set {
+  background: #27ae60;
+}
+
+/* OCR Modal */
+.ocr-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.ocr-modal.hidden {
+  display: none;
+}
+
+.ocr-modal-content {
+  background: var(--color-bg-card);
+  border-radius: 8px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ocr-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background: var(--color-bg-highlight);
+  border-bottom: 1px solid var(--color-border);
+  font-weight: bold;
+  color: var(--color-text-primary);
+}
+
+.ocr-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  line-height: 1;
+}
+
+.ocr-modal-close:hover {
+  color: var(--color-text-primary);
+}
+
+.ocr-modal-body {
+  padding: 20px;
+  overflow: auto;
+  flex: 1;
+}
+
+.ocr-modal-body p {
+  margin: 0 0 15px 0;
+  color: var(--color-text-primary);
+}
+
+.ocr-capture-container {
+  position: relative;
+  cursor: crosshair;
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  border: 2px solid var(--color-border);
+  border-radius: 4px;
+}
+
+.ocr-capture-image {
+  max-width: 100%;
+  max-height: 60vh;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.ocr-selection-box {
+  position: absolute;
+  border: 2px solid var(--color-accent);
+  background: rgba(255, 140, 66, 0.2);
+  pointer-events: none;
+}
+
+.ocr-selection-box.hidden {
+  display: none;
+}
+
+.ocr-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 15px 20px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-highlight);
+}
+
+/* OCR Settings Modal */
+.ocr-setting {
+  margin-bottom: 20px;
+}
+
+.ocr-setting label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.ocr-setting input[type="range"] {
+  width: calc(100% - 60px);
+  vertical-align: middle;
+  accent-color: var(--color-accent);
+}
+
+.ocr-setting input[type="range"] + span {
+  display: inline-block;
+  width: 50px;
+  text-align: right;
+  color: var(--color-text-secondary);
+  font-family: monospace;
+}
+
+.ocr-setting select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.ocr-setting select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(255, 140, 66, 0.2);
+}
+
+/* OCR Preview Modal */
+#ocr-preview-modal .ocr-modal-content {
+  max-width: 700px;
+}
+
+.ocr-preview-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.ocr-preview-section {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 15px;
+  background: var(--color-bg-highlight);
+}
+
+.ocr-preview-section h4 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ocr-preview-image {
+  max-width: 100%;
+  display: block;
+  margin: 0 auto;
+  border: 1px solid var(--color-border);
+  background: #000;
+  image-rendering: pixelated;
+}
+
+.ocr-preview-placeholder {
+  text-align: center;
+  padding: 30px;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.ocr-preview-info {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* OCR Settings Modal Additional Styles */
+.ocr-settings-content {
+  max-width: 600px;
+}
+
+.ocr-setting-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ocr-setting-help {
+  margin: 5px 0 0 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.ocr-setting label input[type="checkbox"] {
+  margin-right: 8px;
+  accent-color: var(--color-accent);
+}
+
+.ocr-preview-container {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.ocr-preview-column {
+  flex: 1;
+  min-width: 200px;
+}
+
+.ocr-preview-column > span {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: var(--color-text-primary);
+}
+
+.ocr-preview-pair {
+  display: flex;
+  gap: 10px;
+}
+
+.ocr-preview-pair > div {
+  flex: 1;
+  text-align: center;
+}
+
+.ocr-preview-pair small {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.ocr-preview-large {
+  max-width: 100%;
+  height: auto;
+  min-height: 30px;
+  border: 1px solid var(--color-border);
+  background: #000;
+  image-rendering: pixelated;
+}
+
+/* OCR Preview Row in Panel */
+.ocr-preview-row {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
+.ocr-preview-item {
+  flex: 1;
+}
+
+.ocr-preview-item label {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.ocr-preview-images {
+  display: flex;
+  gap: 5px;
+}
+
+.ocr-preview-img {
+  max-width: 80px;
+  height: auto;
+  border: 1px solid var(--color-border);
+  background: #000;
+  image-rendering: pixelated;
+}
+
+/* Region set indicator */
+.ocr-btn.region-set {
+  background: var(--color-success, #28a745);
+  border-color: var(--color-success, #28a745);
+}
+
+.ocr-btn.region-set:hover {
+  background: #218838;
+  border-color: #1e7e34;
+}
+

@@ -44,6 +44,15 @@
   --color-plot-4: rgb(204, 121, 167);    /* Reddish purple */
   --color-plot-5: rgb(86, 180, 233);     /* Sky blue */
   --color-plot-6: rgb(213, 94, 0);       /* Vermillion */
+  --color-plot-7: rgb(240, 228, 66);     /* Yellow */
+  --color-plot-8: rgb(124, 120, 255);    /* Periwinkle */
+  --color-plot-9: rgb(255, 105, 97);     /* Salmon */
+  --color-plot-10: rgb(0, 181, 204);     /* Teal */
+  --color-plot-11: rgb(127, 127, 127);   /* Gray */
+  --color-plot-12: rgb(109, 80, 60);     /* Brown */
+  --color-plot-13: rgb(159, 31, 191);    /* Magenta */
+  --color-plot-14: rgb(60, 220, 120);    /* Bright green */
+  --color-plot-15: rgb(15, 76, 129);     /* Deep blue */
   --color-plot-total: rgb(255, 140, 66);    /* Argo orange for total curve */
 }
 
@@ -93,6 +102,15 @@ body.dark-mode {
   --color-plot-4: rgb(220, 145, 185);    /* Reddish purple */
   --color-plot-5: rgb(120, 200, 245);    /* Sky blue */
   --color-plot-6: rgb(235, 120, 45);     /* Vermillion */
+  --color-plot-7: rgb(250, 240, 120);    /* Yellow */
+  --color-plot-8: rgb(165, 165, 255);    /* Periwinkle */
+  --color-plot-9: rgb(255, 145, 135);    /* Salmon */
+  --color-plot-10: rgb(90, 215, 230);    /* Teal */
+  --color-plot-11: rgb(170, 170, 170);   /* Gray */
+  --color-plot-12: rgb(170, 125, 95);    /* Brown */
+  --color-plot-13: rgb(210, 120, 235);   /* Magenta */
+  --color-plot-14: rgb(110, 240, 160);   /* Bright green */
+  --color-plot-15: rgb(90, 135, 200);    /* Deep blue */
   --color-plot-total: rgb(200, 200, 200); /* Light gray for total curve */
 }
 
@@ -420,6 +438,22 @@ button:hover {
   transition: transform 0.1s, box-shadow 0.1s, filter 0.2s;
   width: max-content;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.laserhead-hover-tooltip {
+  position: absolute;
+  z-index: 9999;
+  pointer-events: none;
+  max-width: 360px;
+}
+
+.laserhead-hover-tooltip.hidden {
+  display: none;
+}
+
+.laserhead-hover-tooltip .laserhead-card {
+  cursor: default;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
 }
 
 .laserhead-card:hover,

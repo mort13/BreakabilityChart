@@ -4,6 +4,7 @@ const STORAGE_KEYS = {
     LASER_SETUP: 'breakabilityChart_laserSetup',
     DISPLAY_ATTRIBUTES: 'breakabilityChart_displayAttributes',
     MODULE_DISPLAY_ATTRIBUTES: 'breakabilityChart_moduleDisplayAttributes',
+    CHART_DISPLAY_ATTRIBUTES: 'breakabilityChart_chartDisplayAttributes',
     ACTIVE_SIZES: 'breakabilityChart_activeSizes',
     ACTIVE_MODULE_TYPES: 'breakabilityChart_activeModuleTypes',
     ACTIVE_TIERS: 'breakabilityChart_activeTiers',
@@ -88,6 +89,20 @@ export function saveModuleDisplayAttributes(attributes) {
  */
 export function loadModuleDisplayAttributes() {
     return loadFromStorage(STORAGE_KEYS.MODULE_DISPLAY_ATTRIBUTES, arrayToSet);
+}
+
+/**
+ * Save chart display attributes
+ */
+export function saveChartDisplayAttributes(attributes) {
+    saveToStorage(STORAGE_KEYS.CHART_DISPLAY_ATTRIBUTES, attributes, setToArray);
+}
+
+/**
+ * Load chart display attributes
+ */
+export function loadChartDisplayAttributes() {
+    return loadFromStorage(STORAGE_KEYS.CHART_DISPLAY_ATTRIBUTES, arrayToSet);
 }
 
 /**

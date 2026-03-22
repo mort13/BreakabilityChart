@@ -186,22 +186,35 @@ export function generateModuleAttributeRows(module, visibleAttributes) {
  * @param {string} moduleSectionHTML - Pre-generated module section HTML
  * @returns {string} - HTML string
  */
-export function generateSelectedLaserheadHTML(laserhead, idx, attributeRowsHTML, moduleSectionHTML) {
+export function generateSelectedLaserheadHTML(laserhead, idx, attributeRowsHTML, moduleSectionHTML, options = {}) {
+    const isCombined = options.isCombined === true;
+    const actionIndex = Number.isInteger(options.actionIndex) ? options.actionIndex : idx;
+    const comboKey = options.comboKey || '';
+    const sizeLabel = isCombined ? 'Combo' : `S${laserhead.size || 1}`;
+    const nameValue = laserhead.customName || cleanLaserName(laserhead.name);
+    const actionButtons = isCombined ? '' : `
+                <button onclick="replaceLaserhead(${actionIndex})" class="replace-btn">Replace</button>
+                <button onclick="removeLaserhead(${actionIndex})" class="remove-btn">&times;</button>
+            `;
+    const moduleSection = isCombined ? '' : moduleSectionHTML;
+
     return `
         <div class="selected-laserhead">
             <div class="laserhead-info">
-                <div class="size">S${laserhead.size || 1}</div>
+                <div class="size">${sizeLabel}</div>
                 <div class="name" contenteditable="true" 
-                     data-original-name="${laserhead.customName || cleanLaserName(laserhead.name)}">
-                    ${laserhead.customName || cleanLaserName(laserhead.name)}
+                     data-original-name="${nameValue}"
+                     data-source-index="${Number.isInteger(options.sourceIndex) ? options.sourceIndex : ''}"
+                     data-combo-key="${comboKey}"
+                     data-is-combined="${isCombined ? 'true' : 'false'}">
+                    ${nameValue}
                 </div>
-                <button onclick="replaceLaserhead(${idx})" class="replace-btn">Replace</button>
-                <button onclick="removeLaserhead(${idx})" class="remove-btn">×</button>
+                ${actionButtons}
             </div>
             <table class="laserhead-table">
                 <tbody>${attributeRowsHTML}</tbody>
             </table>
-            ${moduleSectionHTML}
+            ${moduleSection}
         </div>
     `;
 }

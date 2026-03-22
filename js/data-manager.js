@@ -35,6 +35,12 @@ export const MODULE_ATTRIBUTE_ORDER = [
     "Uses"
 ];
 
+// Chart attribute order
+export const CHART_ATTRIBUTE_ORDER = [
+    "Combined Lasers",
+    "Laserhead Details on Hover"
+];
+
 // Attributes to display for modules
 export const MODULE_DISPLAY_ATTRIBUTES = new Set([
     "Minimum Laser Power",
@@ -105,6 +111,9 @@ export const DEFAULT_ACTIVE_MODULE_NAMES = [
     "Uses"
 ];
 
+// Default active chart attributes (empty means all off)
+export const DEFAULT_ACTIVE_CHART_NAMES = [];
+
 // Utility functions
 export function getUnit(attr) {
     if(attr.unit) return attr.unit;
@@ -164,11 +173,12 @@ export function cleanLaserName(name) {
 }
 
 // Import storage functions
-import { loadDisplayAttributes, loadModuleDisplayAttributes } from './storage-manager.js';
+import { loadChartDisplayAttributes, loadDisplayAttributes, loadModuleDisplayAttributes } from './storage-manager.js';
 
 // Initialize window globals with saved values or defaults
 window.displayAttributes = loadDisplayAttributes() || DEFAULT_ACTIVE_NAMES;
 window.moduleDisplayAttributes = loadModuleDisplayAttributes() || new Set(DEFAULT_ACTIVE_MODULE_NAMES);
+window.chartDisplayAttributes = loadChartDisplayAttributes() || new Set(DEFAULT_ACTIVE_CHART_NAMES);
 
 export async function loadMiningData() {
     try {

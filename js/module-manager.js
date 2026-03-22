@@ -3,13 +3,14 @@ import {
     MODULE_ATTRIBUTE_ORDER, 
     MODULE_DISPLAY_ATTRIBUTES,
     ATTRIBUTE_ORDER_NAMES,
+    CHART_ATTRIBUTE_ORDER,
     DEFAULT_ACTIVE_NAMES,
     DEFAULT_ACTIVE_MODULE_NAMES
 } from './data-manager.js';
 import { renderSelectedLaserheads, selectedLaserheads } from './laserhead-manager.js';
 import { generateModuleCardHTML } from './html-generators.js';
 import { updateBreakabilityChart } from './chart-manager.js';
-import { saveLaserSetup, saveActiveModuleTypes, loadActiveModuleTypes, saveActiveTiers, loadActiveTiers, saveDisplayAttributes, saveModuleDisplayAttributes } from './storage-manager.js';
+import { saveLaserSetup, saveActiveModuleTypes, loadActiveModuleTypes, saveActiveTiers, loadActiveTiers, saveDisplayAttributes, saveModuleDisplayAttributes, saveChartDisplayAttributes } from './storage-manager.js';
 
 let currentLaserheadIndex = null;
 let currentModuleSlot = null;
@@ -87,6 +88,7 @@ export function isActiveModule(module) {
 export function renderDisplayOptions() {
     const laserheadCheckboxes = document.getElementById('displayOptionsCheckboxes');
     const moduleCheckboxes = document.getElementById('moduleOptionsCheckboxes');
+    const chartCheckboxes = document.getElementById('chartOptionsCheckboxes');
 
     if (laserheadCheckboxes) {
         laserheadCheckboxes.innerHTML = ATTRIBUTE_ORDER_NAMES.map(attrName => `
@@ -132,6 +134,35 @@ export function renderDisplayOptions() {
                 window.moduleDisplayAttributes = checked;
                 saveModuleDisplayAttributes(checked);
                 renderSelectedLaserheads();
+            });
+        });
+    }
+
+    if (chartCheckboxes) {
+        const chartAttributes = window.chartDisplayAttributes instanceof Set
+            ? window.chartDisplayAttributes
+            : new Set(window.chartDisplayAttributes || []);
+        chartCheckboxes.innerHTML = CHART_ATTRIBUTE_ORDER.map(attrName => `
+            <div>
+                <input type="checkbox"
+                       id="chart_${attrName}"
+                       ${chartAttributes.has(attrName) ? 'checked' : ''}>
+                <label for="chart_${attrName}">${attrName}</label>
+            </div>
+        `).join('');
+
+        const checkboxes = chartCheckboxes.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                const checked = new Set(
+                    Array.from(checkboxes)
+                        .filter(cb => cb.checked)
+                        .map(cb => cb.id.replace('chart_', ''))
+                );
+                window.chartDisplayAttributes = checked;
+                saveChartDisplayAttributes(checked);
+                renderSelectedLaserheads();
+                updateBreakabilityChart();
             });
         });
     }

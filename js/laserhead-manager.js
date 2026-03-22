@@ -4,11 +4,12 @@ import {
     MODULE_ATTRIBUTE_ORDER,
     MODULE_DISPLAY_ATTRIBUTES,
     getUnit, 
-    cleanLaserName 
+    cleanLaserName,
+    calculateCombinedValue
 } from './data-manager.js';
 import { updateBreakabilityChart } from './chart-manager.js';
 import { isActiveModule } from './module-manager.js';
-import { calculateAttributeValue, createSyntheticAttribute } from './calculations.js';
+import { calculateAttributeValue, createSyntheticAttribute, roundValue } from './calculations.js';
 import { saveLaserSetup, loadLaserSetup, saveActiveSizes, loadActiveSizes } from './storage-manager.js';
 import { 
     generateLaserheadCardHTML,
@@ -23,6 +24,7 @@ let currentLaserheadIndex = null;
 let filteredLaserheads = [];
 export let selectedLaserheads = [];
 let activeSizes = new Set(["1","2"]); // Only S1/S2 lasers
+const combinedNameOverrides = new Map();
 
 export function setupLaserheadUI() {
     setupLaserheadModal();
@@ -114,6 +116,143 @@ function sortAttributes(attrs) {
 
         return orderA - orderB || suffixA - suffixB;
     });
+}
+
+function shouldShowCombinedLaserheads() {
+    return window.chartDisplayAttributes?.has("Combined Lasers");
+}
+
+function getLaserheadSizeValue(laserhead) {
+    if (laserhead?.size) {
+        const size = parseInt(laserhead.size, 10);
+        if (!isNaN(size)) return size;
+    }
+    const sizeAttr = laserhead?.attributes?.find(attr => attr.attribute_name === "Size");
+    if (sizeAttr) {
+        const size = parseInt(sizeAttr.value, 10);
+        if (!isNaN(size)) return size;
+    }
+    return null;
+}
+
+function buildCombinedAttributes(laserheads) {
+    const combinedMap = new Map();
+    const minAttributes = new Set(['Maximum Range', 'Optimal Range']);
+    
+    laserheads.forEach(laserhead => {
+        const modules = laserhead.modules || [];
+        ATTRIBUTE_ORDER_NAMES.forEach(attrName => {
+            let attr = (laserhead.attributes || []).find(a => a.attribute_name === attrName);
+            if (!attr) {
+                attr = createSyntheticAttribute(attrName, modules);
+            }
+            if (!attr) return;
+            
+            const value = calculateAttributeValue(attr, modules);
+            if (value === null || isNaN(value)) return;
+            
+            const unit = getUnit(attr);
+            if (!combinedMap.has(attrName)) {
+                combinedMap.set(attrName, { value, unit });
+                return;
+            }
+            
+            const prev = combinedMap.get(attrName);
+            let combinedValue;
+            if (minAttributes.has(attrName)) {
+                combinedValue = Math.min(prev.value, value);
+            } else if (unit === '%') {
+                combinedValue = calculateCombinedValue(prev.value, value, unit, true, attrName);
+            } else {
+                combinedValue = prev.value + value;
+            }
+            combinedMap.set(attrName, { value: roundValue(combinedValue), unit });
+        });
+    });
+    
+    return Array.from(combinedMap.entries()).map(([attribute_name, data]) => ({
+        attribute_name,
+        value: data.value.toString(),
+        unit: data.unit
+    }));
+}
+
+function generateIndexCombinations(indices) {
+    const results = [];
+    const n = indices.length;
+    
+    function backtrack(start, combo, targetSize) {
+        if (combo.length === targetSize) {
+            results.push([...combo]);
+            return;
+        }
+        for (let i = start; i < n; i++) {
+            combo.push(indices[i]);
+            backtrack(i + 1, combo, targetSize);
+            combo.pop();
+        }
+    }
+    
+    for (let size = 2; size <= n; size++) {
+        backtrack(0, [], size);
+    }
+    
+    return results;
+}
+
+function buildCombinedLaserhead(comboKey, indices) {
+    const laserheads = indices.map(i => selectedLaserheads[i]).filter(Boolean);
+    const sizeValues = laserheads.map(getLaserheadSizeValue).filter(v => v !== null);
+    const combinedSize = sizeValues.length > 0 ? Math.max(...sizeValues) : 1;
+    const defaultNameParts = laserheads.map(lh => lh.customName || cleanLaserName(lh.name));
+    const defaultName = `Combined: ${defaultNameParts.join(' + ')}`;
+    const customName = combinedNameOverrides.get(comboKey);
+    
+    return {
+        id: `combined_${comboKey}`,
+        name: defaultName,
+        customName: customName || undefined,
+        attributes: buildCombinedAttributes(laserheads),
+        modules: [],
+        size: combinedSize,
+        isCombined: true,
+        comboKey
+    };
+}
+
+function buildDisplayLaserheadItems() {
+    const baseItems = selectedLaserheads.map((laserhead, index) => ({
+        laserhead,
+        sourceIndex: index,
+        isCombined: false,
+        comboKey: ''
+    }));
+    
+    if (!shouldShowCombinedLaserheads() || selectedLaserheads.length < 2) {
+        return baseItems;
+    }
+    
+    const indices = selectedLaserheads.map((_, i) => i);
+    const combos = generateIndexCombinations(indices);
+    const combinedItems = combos.map(combo => {
+        const comboKey = combo.join(',');
+        return {
+            laserhead: buildCombinedLaserhead(comboKey, combo),
+            sourceIndex: null,
+            isCombined: true,
+            comboKey
+        };
+    });
+    
+    return [...baseItems, ...combinedItems];
+}
+
+export function getChartLaserheads() {
+    return buildDisplayLaserheadItems().map(item => item.laserhead);
+}
+
+export function getDisplayLaserheadItems() {
+    return buildDisplayLaserheadItems();
 }
 
 export function showLaserheadSelection(idx) {
@@ -262,13 +401,24 @@ export function toggleModule(laserheadIdx, moduleIdx) {
 }
 
 function addNameEditingHandlers(container) {
-    container.querySelectorAll('.name[contenteditable="true"]').forEach((nameElement, idx) => {
+    container.querySelectorAll('.name[contenteditable="true"]').forEach((nameElement) => {
         nameElement.addEventListener('blur', function() {
             const newName = this.textContent.trim();
+            const isCombined = this.dataset.isCombined === 'true';
+            const sourceIndex = parseInt(this.dataset.sourceIndex, 10);
+            const comboKey = this.dataset.comboKey;
+            
             if (newName === '') {
                 this.textContent = this.dataset.originalName;
-            } else {
-                selectedLaserheads[idx].customName = newName;
+                return;
+            }
+            
+            if (isCombined) {
+                if (comboKey) {
+                    combinedNameOverrides.set(comboKey, newName);
+                }
+            } else if (!isNaN(sourceIndex) && selectedLaserheads[sourceIndex]) {
+                selectedLaserheads[sourceIndex].customName = newName;
                 saveLaserSetup(selectedLaserheads);
             }
         });
@@ -289,6 +439,9 @@ function addNameEditingHandlers(container) {
 export function renderSelectedLaserheads() {
     const container = document.getElementById('selectedList');
     if (!container) return;
+
+    const displayItems = getDisplayLaserheadItems();
+    const displayLaserheads = displayItems.map(item => item.laserhead);
     
     // First pass: collect all unique attributes from all selected laserheads and modules
     // Only include attributes that are in the display options
@@ -297,7 +450,7 @@ export function renderSelectedLaserheads() {
     // Attributes that should not create synthetic entries (already represented by other attributes)
     const skipSyntheticAttributes = ['Mining Laser Power']; // Represented by Min/Max Laser Power
     
-    selectedLaserheads.forEach(laserhead => {
+    displayLaserheads.forEach(laserhead => {
         // Add laserhead attributes
         (laserhead.attributes || []).forEach(attr => {
             const processedAttrs = processAttribute(attr, false, laserhead.modules || []);
@@ -331,7 +484,11 @@ export function renderSelectedLaserheads() {
         allAttributesArray.map(name => ({ name, value: '' }))
     ).map(a => a.name);
     
-    container.innerHTML = selectedLaserheads.map((laserhead, idx) => {
+    container.innerHTML = displayItems.map((item, displayIdx) => {
+        const laserhead = item.laserhead;
+        const actionIndex = Number.isInteger(item.sourceIndex) ? item.sourceIndex : displayIdx;
+        const isCombined = item.isCombined === true;
+        const comboKey = item.comboKey || '';
         // Get the number of module slots from the laserhead attributes
         const moduleSlotAttr = laserhead.attributes?.find(attr => attr.attribute_name === "Module Slots");
         const numModuleSlots = moduleSlotAttr ? parseInt(moduleSlotAttr.value, 10) : 3;
@@ -383,37 +540,28 @@ export function renderSelectedLaserheads() {
         }).join('');
 
         // Generate module slots with a section header
-        const moduleSection = `
-        <div class="module-section">
-            <h3 class="module-section-title">Modules</h3>
-            <div class="module-slots">
-            ${Array(numModuleSlots).fill(null).map((_, i) => {
-            const module = laserhead.modules[i];
-            if (module) {
-                const moduleAttrs = generateModuleAttributeRows(module, MODULE_DISPLAY_ATTRIBUTES);
-                return generateFilledModuleSlotHTML(module, moduleAttrs, idx, i, isActiveModule(module));
-            } else {
-                return generateEmptyModuleSlotHTML(idx, i);
-            }
-        }).join('')}
-            </div>
-        </div>
-        `;
-
-        const moduleSectionHTML = `<div class="module-section">
-                        ${Array(numModuleSlots).fill(null).map((_, i) => {
-                            const module = laserhead.modules?.[i];
-                            if (module) {
-                                const moduleAttrs = generateModuleAttributeRows(module, window.moduleDisplayAttributes);
-                                return generateFilledModuleSlotHTML(module, moduleAttrs, idx, i, isActiveModule(module));
-                            } else {
-                                return generateEmptyModuleSlotHTML(idx, i);
-                            }
-                        }).join('')}
-                </div>
-            </div>`;
+        let moduleSectionHTML = '';
+        if (!isCombined) {
+            moduleSectionHTML = `<div class="module-section">
+                            ${Array(numModuleSlots).fill(null).map((_, i) => {
+                                const module = laserhead.modules?.[i];
+                                if (module) {
+                                    const moduleAttrs = generateModuleAttributeRows(module, window.moduleDisplayAttributes);
+                                    return generateFilledModuleSlotHTML(module, moduleAttrs, actionIndex, i, isActiveModule(module));
+                                } else {
+                                    return generateEmptyModuleSlotHTML(actionIndex, i);
+                                }
+                            }).join('')}
+                    </div>
+                </div>`;
+        }
         
-        return generateSelectedLaserheadHTML(laserhead, idx, rows, moduleSectionHTML);
+        return generateSelectedLaserheadHTML(laserhead, displayIdx, rows, moduleSectionHTML, {
+            sourceIndex: item.sourceIndex,
+            actionIndex,
+            isCombined,
+            comboKey
+        });
     }).join('');
     
     // Add event handlers for name editing after rendering
@@ -421,6 +569,21 @@ export function renderSelectedLaserheads() {
     
     // Equalize card heights after rendering
     equalizeSelectedCardHeights();
+}
+
+export function buildLaserheadHoverHTML(laserhead) {
+    const displayLaserhead = {
+        ...laserhead,
+        name: laserhead.customName || laserhead.name
+    };
+    const modules = laserhead.modules || [];
+    const attrs = (displayLaserhead.attributes || [])
+        .map(attr => processAttribute(attr, true, modules))
+        .flat()
+        .filter(Boolean);
+    const sortedAttrs = sortAttributes(attrs);
+    const cardInner = generateLaserheadCardHTML(displayLaserhead, sortedAttrs);
+    return `<div class="laserhead-card hover-card">${cardInner}</div>`;
 }
 
 // Function to equalize the height of all selected laserhead cards using padding

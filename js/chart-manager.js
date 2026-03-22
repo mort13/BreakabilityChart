@@ -1,5 +1,5 @@
 import { miningData, cleanLaserName } from './data-manager.js';
-import { selectedLaserheads } from './laserhead-manager.js';
+import { selectedLaserheads, getChartLaserheads, buildLaserheadHoverHTML } from './laserhead-manager.js';
 import { calculateTotalPower, calculateResistanceModifier, computeCurve, computeCombinedCurve, computeMassAtResistance, distributePowerAcrossLasers } from './calculations.js';
 import { saveOperatorSeatMode, loadOperatorSeatMode } from './storage-manager.js';
 
@@ -7,6 +7,9 @@ let chart = null;
 let marker = null;
 let operatorSeatMode = loadOperatorSeatMode() ?? false;
 let markerPosition = null; // Store last marker position for animation
+let defaultLegendOnClick = null;
+let hoverTooltip = null;
+let currentChartLaserheads = [];
 
 // Helper function to get CSS variable colors
 function getCSSColor(variableName) {
@@ -199,6 +202,9 @@ export function setupChart() {
         }
     });
 
+    defaultLegendOnClick = chart.options.plugins.legend.onClick;
+    ensureHoverTooltip();
+
     // Handle window resize
     window.addEventListener('resize', () => {
         if (chart) {
@@ -284,11 +290,47 @@ export function setupChart() {
     }, 0);
 }
 
+function ensureHoverTooltip() {
+    if (hoverTooltip) return;
+    hoverTooltip = document.getElementById('laserheadHoverTooltip');
+    if (!hoverTooltip) {
+        hoverTooltip = document.createElement('div');
+        hoverTooltip.id = 'laserheadHoverTooltip';
+        hoverTooltip.className = 'laserhead-hover-tooltip hidden';
+        document.body.appendChild(hoverTooltip);
+    }
+}
+
+function showHoverTooltip(laserhead, evt) {
+    if (!hoverTooltip) ensureHoverTooltip();
+    if (!hoverTooltip) return;
+    hoverTooltip.innerHTML = buildLaserheadHoverHTML(laserhead);
+    hoverTooltip.classList.remove('hidden');
+    const x = evt?.clientX ?? 0;
+    const y = evt?.clientY ?? 0;
+    hoverTooltip.style.left = `${x + 12}px`;
+    hoverTooltip.style.top = `${y + 12}px`;
+}
+
+function hideHoverTooltip() {
+    if (!hoverTooltip) return;
+    hoverTooltip.classList.add('hidden');
+}
+
 export function updateBreakabilityChart() {
     if (!chart) return;
     
+    const baseLaserheads = selectedLaserheads || [];
+    const chartLaserheads = getChartLaserheads();
+    const chartAttributes = window.chartDisplayAttributes instanceof Set
+        ? window.chartDisplayAttributes
+        : new Set(window.chartDisplayAttributes || []);
+    const showCombined = chartAttributes.has("Combined Lasers");
+    const showHoverDetails = chartAttributes.has("Laserhead Details on Hover");
+    currentChartLaserheads = chartLaserheads;
+    
     // Process selected laserheads
-    if (!selectedLaserheads || selectedLaserheads.length === 0) {
+    if (!baseLaserheads || baseLaserheads.length === 0) {
         // Clear all laser datasets (keep marker and total)
         chart.data.datasets = chart.data.datasets.filter(ds => 
             ds.label === "Marker" || ds.group === 'total'
@@ -300,7 +342,7 @@ export function updateBreakabilityChart() {
     // Remove datasets for laserheads that no longer exist
     // Build a set of valid group IDs based on current laserheads
     const validGroups = new Set();
-    selectedLaserheads.forEach((laserhead, i) => {
+    chartLaserheads.forEach((laserhead, i) => {
         const laserLabel = laserhead.customName || cleanLaserName(laserhead.name);
         const groupId = `laser_${i}_${laserLabel}`;
         validGroups.add(groupId);
@@ -315,37 +357,71 @@ export function updateBreakabilityChart() {
         // Keep laser datasets that are in the valid groups
         return ds.group && validGroups.has(ds.group);
     });
+    
+    // If combined lasers are shown, remove total datasets and reset legend handler
+    if (showCombined) {
+        chart.data.datasets = chart.data.datasets.filter(ds => ds.group !== 'total');
+        if (defaultLegendOnClick) {
+            chart.options.plugins.legend.onClick = defaultLegendOnClick;
+        }
+    }
+    
+    if (showHoverDetails) {
+        chart.options.plugins.legend.onHover = function(e, legendItem, legend) {
+            const dataset = legend.chart.data.datasets[legendItem.datasetIndex];
+            if (!dataset || dataset.group === 'total' || dataset.label === 'Marker') {
+                hideHoverTooltip();
+                return;
+            }
+            const laserIndex = dataset.laserIndex;
+            const laserhead = currentChartLaserheads[laserIndex];
+            if (!laserhead) {
+                hideHoverTooltip();
+                return;
+            }
+            const nativeEvent = e?.native || e;
+            showHoverTooltip(laserhead, nativeEvent);
+        };
+        chart.options.plugins.legend.onLeave = function() {
+            hideHoverTooltip();
+        };
+    } else {
+        chart.options.plugins.legend.onHover = null;
+        chart.options.plugins.legend.onLeave = null;
+        hideHoverTooltip();
+    }
 
-    // Arrays to store individual laser data for totals
+    // Arrays to store individual laser data for totals (base laserheads only)
     let powers = [];
     let resistanceModifiers = [];
 
-    for (let i = 0; i < selectedLaserheads.length; i++) {
-        const laserhead = selectedLaserheads[i];
-        
-        // Get active modules (filter out null placeholders first)
+    // Add datasets for chart laserheads (base + combined)
+    for (let i = 0; i < chartLaserheads.length; i++) {
+        const laserhead = chartLaserheads[i];
+        const activeModules = laserhead.modules?.filter(m => m && m.isActive !== false) || [];
+        addLaserDataset(laserhead, activeModules, i);
+    }
+
+    // Calculate totals using base laserheads only
+    for (let i = 0; i < baseLaserheads.length; i++) {
+        const laserhead = baseLaserheads[i];
         const activeModules = laserhead.modules?.filter(m => m && m.isActive !== false) || [];
 
-        // Calculate values for this laser
         const maxP = calculateTotalPower(laserhead, activeModules, true);
         const minP = calculateTotalPower(laserhead, activeModules, false);
         const r_mod = operatorSeatMode ? 1 : calculateResistanceModifier(laserhead, activeModules, selectedGadget);
-        
-        // Store values for total calculation
+
         powers.push({ max: maxP, min: minP });
         resistanceModifiers.push(r_mod);
-
-        // Add dataset for this laser configuration
-        addLaserDataset(laserhead, activeModules, i);
     }
     
     // Handle total curves - update if exists, remove if only one laser left
-    if (selectedLaserheads.length > 1) {
+    if (!showCombined && baseLaserheads.length > 1) {
         // Helper to get visibility status for all lasers
         const getVisibleIndices = () => {
             return powers.map((_, i) => {
-                if (i >= selectedLaserheads.length) return false;
-                const laserhead = selectedLaserheads[i];
+                if (i >= baseLaserheads.length) return false;
+                const laserhead = baseLaserheads[i];
                 const laserLabel = laserhead.customName || cleanLaserName(laserhead.name);
                 const groupId = `laser_${i}_${laserLabel}`;
                 const laserDataset = chart.data.datasets.find(ds => ds.group === groupId && !ds.label.endsWith('_min'));
@@ -501,9 +577,9 @@ export function updateBreakabilityChart() {
             // Recalculate totals after visibility change
             // Build visibility array accounting for pending visibility change
             const visibleForTotal = powers.map((_, i) => {
-                if (i >= selectedLaserheads.length) return false;
+                if (i >= baseLaserheads.length) return false;
                 
-                const laserhead = selectedLaserheads[i];
+                const laserhead = baseLaserheads[i];
                 const laserLabel = laserhead.customName || cleanLaserName(laserhead.name);
                 const groupId = `laser_${i}_${laserLabel}`;
                 const laserDataset = chart.data.datasets.find(ds => ds.group === groupId && !ds.label.endsWith('_min'));
@@ -558,8 +634,14 @@ export function updateBreakabilityChart() {
                 }, 800);
             }
         };
-    } else if (selectedLaserheads.length === 1) {
+    } else if (!showCombined && baseLaserheads.length === 1) {
         // Remove total curves if only one laser left
+        chart.data.datasets = chart.data.datasets.filter(ds => ds.group !== 'total');
+        if (defaultLegendOnClick) {
+            chart.options.plugins.legend.onClick = defaultLegendOnClick;
+        }
+    } else if (showCombined) {
+        // Ensure totals are gone when combined lasers are shown
         chart.data.datasets = chart.data.datasets.filter(ds => ds.group !== 'total');
     }
     
@@ -694,6 +776,8 @@ function addLaserDataset(laserhead, modules, index) {
         maxDataset.label = laserLabel;
         minDataset.group = groupId;
         maxDataset.group = groupId;
+        minDataset.laserIndex = index;
+        maxDataset.laserIndex = index;
         
         // Update data
         minDataset.data = finalMinData;
@@ -713,7 +797,8 @@ function addLaserDataset(laserhead, modules, index) {
             fill: '+1',
             backgroundColor: color.replace(')', ', 0.1)').replace('rgb', 'rgba'),
             pointRadius: 0,
-            group: groupId
+            group: groupId,
+            laserIndex: index
         });
         
         chart.data.datasets.push({
@@ -722,7 +807,8 @@ function addLaserDataset(laserhead, modules, index) {
             borderColor: color,
             fill: false,
             pointRadius: 0,
-            group: groupId
+            group: groupId,
+            laserIndex: index
         });
     }
 }
@@ -737,7 +823,16 @@ function getColor(index) {
         getCSSColor('--color-plot-3'),
         getCSSColor('--color-plot-4'),
         getCSSColor('--color-plot-5'),
-        getCSSColor('--color-plot-6')
+        getCSSColor('--color-plot-6'),
+        getCSSColor('--color-plot-7'),
+        getCSSColor('--color-plot-8'),
+        getCSSColor('--color-plot-9'),
+        getCSSColor('--color-plot-10'),
+        getCSSColor('--color-plot-11'),
+        getCSSColor('--color-plot-12'),
+        getCSSColor('--color-plot-13'),
+        getCSSColor('--color-plot-14'),
+        getCSSColor('--color-plot-15')
     ];
     return colors[index % colors.length];
 }

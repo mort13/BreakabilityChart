@@ -4,6 +4,7 @@ import { setupLaserheadUI } from './laserhead-manager.js';
 import { setupModuleUI } from './module-manager.js';
 import { setupTabs, setupLaserheadButtons, setupDarkModeToggle, injectFooterToTabs } from './ui-manager.js';
 import { setupGadgetUI } from './gadget-manager.js';
+import { setupOCR } from './ocr-ui.js';
 
 // Main initialization
 window.addEventListener("DOMContentLoaded", async () => {
@@ -16,4 +17,5 @@ window.addEventListener("DOMContentLoaded", async () => {
     setupModuleUI();
     setupLaserheadButtons();
     setupGadgetUI();
+    setupOCR();
 });

@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "modelPath": "ocr-data/models/model_cnn.onnx",
+  "charClasses": "0123456789.-%",
+  "captureSettings": {
+    "fps": 2
+  },
+  "anchors": {
+    "mass": {
+      "templatePath": "ocr-data/anchors/mass.jpg",
+      "matchThreshold": 0.51,
+      "searchROI": null
+    },
+    "resistance": {
+      "templatePath": "ocr-data/anchors/resistance.jpg",
+      "matchThreshold": 0.6,
+      "searchROI": null
+    }
+  },
+  "rois": {
+    "mass": {
+      "anchorName": "mass",
+      "xOffset": 128,
+      "yOffset": 0,
+      "width": 46,
+      "height": 24,
+      "filters": {
+        "brightness": 15,
+        "contrast": 0,
+        "threshold": 115,
+        "thresholdEnabled": false,
+        "grayscale": true,
+        "invert": false,
+        "channel": "none"
+      },
+      "segMode": "fixed_width",
+      "charWidth": 0,
+      "charCount": 5
+    },
+    "resistance": {
+      "anchorName": "resistance",
+      "xOffset": 80,
+      "yOffset": 0,
+      "width": 50,
+      "height": 24,
+      "filters": {
+        "brightness": 0,
+        "contrast": 0,
+        "threshold": 127,
+        "thresholdEnabled": false,
+        "grayscale": true,
+        "invert": false,
+        "channel": "none"
+      },
+      "segMode": "fixed_width",
+      "charWidth": 0,
+      "charCount": 4
+    }
+  }
+}

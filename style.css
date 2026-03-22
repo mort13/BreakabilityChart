@@ -667,6 +667,42 @@ button:hover {
   margin-right: 5px;
 }
 
+.selected-laserhead .group-field {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.selected-laserhead .group-field label {
+  font-size: 11px;
+  color: var(--color-text-secondary, #888);
+  font-weight: bold;
+}
+
+.selected-laserhead .group-input {
+  width: 10px;
+  padding: 1px 1px;
+  font-size: 11px;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  background: var(--color-bg-highlight);
+  color: var(--color-text-primary);
+  text-align: center;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.selected-laserhead .group-input::-webkit-outer-spin-button,
+.selected-laserhead .group-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.selected-laserhead .group-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-accent-focus);
+}
+
 .selected-laserhead .name {
   font-weight: bold;
   flex-grow: 1;
@@ -1123,4 +1159,225 @@ td:first-child {
 
 .rosenrudel-logo:hover {
   filter: drop-shadow(0 4px 8px rgba(255, 140, 66, 0.3));
+}
+
+/* ===========================
+   OCR Panel Styles
+   =========================== */
+
+.ocr-panel {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.ocr-section {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.ocr-section h3 {
+  margin: 0 0 12px 0;
+  color: var(--color-text-primary);
+  font-size: 1.1em;
+}
+
+.ocr-hint {
+  font-size: 0.85em;
+  color: var(--color-text-muted);
+  margin: 0 0 12px 0;
+}
+
+/* Status */
+.ocr-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.ocr-status-label {
+  font-weight: bold;
+  color: var(--color-text-muted);
+}
+
+.ocr-status-label.ocr-running {
+  color: #4caf50;
+}
+
+.ocr-model-status {
+  font-size: 0.85em;
+}
+
+.ocr-model-ok {
+  color: #4caf50;
+}
+
+.ocr-model-missing {
+  color: #e67e22;
+}
+
+/* Buttons */
+.ocr-buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ocr-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9em;
+  background: var(--color-btn-default);
+  color: var(--color-text-primary);
+  transition: filter 0.2s ease;
+}
+
+.ocr-btn:hover:not(:disabled) {
+  filter: brightness(var(--color-hover-brightness));
+}
+
+.ocr-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ocr-btn-start {
+  background: var(--color-btn-add);
+  color: #fff;
+}
+
+.ocr-btn-stop {
+  background: var(--color-btn-delete);
+  color: #fff;
+}
+
+.ocr-btn-reset {
+  background: var(--color-btn-default);
+}
+
+/* Settings */
+.ocr-setting {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ocr-setting label {
+  font-size: 0.9em;
+  color: var(--color-text-primary);
+}
+
+.ocr-setting input[type="number"] {
+  width: 60px;
+  padding: 4px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-bg-highlight);
+  color: var(--color-text-primary);
+}
+
+/* Live values */
+.ocr-values {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.ocr-value-card {
+  flex: 1;
+  background: var(--color-bg-highlight);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 12px;
+  text-align: center;
+}
+
+.ocr-value-label {
+  display: block;
+  font-size: 0.8em;
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+}
+
+.ocr-value-number {
+  display: block;
+  font-size: 1.4em;
+  font-weight: bold;
+  color: var(--color-accent);
+  font-family: monospace;
+}
+
+.ocr-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9em;
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+/* ROI editor fieldsets */
+.ocr-roi-fieldset,
+.ocr-anchor-fieldset {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.ocr-roi-fieldset legend,
+.ocr-anchor-fieldset legend {
+  font-weight: bold;
+  font-size: 0.9em;
+  color: var(--color-accent);
+  padding: 0 6px;
+}
+
+.ocr-roi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.ocr-roi-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.85em;
+  color: var(--color-text-primary);
+}
+
+.ocr-roi-input {
+  padding: 4px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-bg-highlight);
+  color: var(--color-text-primary);
+  font-size: 0.9em;
+}
+
+.ocr-roi-input[type="checkbox"] {
+  width: auto;
+}
+
+.ocr-filter-details {
+  margin-top: 8px;
+}
+
+.ocr-filter-details summary {
+  cursor: pointer;
+  font-size: 0.85em;
+  color: var(--color-text-muted);
+  padding: 4px 0;
+}
+
+.ocr-filter-details[open] summary {
+  margin-bottom: 8px;
 }

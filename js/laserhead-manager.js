@@ -286,6 +286,22 @@ function addNameEditingHandlers(container) {
     });
 }
 
+function addGroupInputHandlers(container) {
+    container.querySelectorAll('.group-input').forEach(input => {
+        input.addEventListener('change', function() {
+            const idx = parseInt(this.dataset.laserIdx, 10);
+            const val = this.value.trim();
+            if (val === '' || isNaN(parseInt(val, 10))) {
+                delete selectedLaserheads[idx].group;
+            } else {
+                selectedLaserheads[idx].group = parseInt(val, 10);
+            }
+            saveLaserSetup(selectedLaserheads);
+            updateBreakabilityChart();
+        });
+    });
+}
+
 export function renderSelectedLaserheads() {
     const container = document.getElementById('selectedList');
     if (!container) return;
@@ -418,6 +434,9 @@ export function renderSelectedLaserheads() {
     
     // Add event handlers for name editing after rendering
     addNameEditingHandlers(container);
+    
+    // Add event handlers for group input fields
+    addGroupInputHandlers(container);
     
     // Equalize card heights after rendering
     equalizeSelectedCardHeights();

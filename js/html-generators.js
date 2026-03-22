@@ -191,6 +191,11 @@ export function generateSelectedLaserheadHTML(laserhead, idx, attributeRowsHTML,
         <div class="selected-laserhead">
             <div class="laserhead-info">
                 <div class="size">S${laserhead.size || 1}</div>
+                <div class="group-field">
+                    <label>G</label>
+                    <input type="number" class="group-input" data-laser-idx="${idx}" 
+                           value="${laserhead.group || ''}" min="1" placeholder="-">
+                </div>
                 <div class="name" contenteditable="true" 
                      data-original-name="${laserhead.customName || cleanLaserName(laserhead.name)}">
                     ${laserhead.customName || cleanLaserName(laserhead.name)}

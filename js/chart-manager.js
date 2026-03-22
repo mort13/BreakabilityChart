@@ -306,6 +306,22 @@ export function updateBreakabilityChart() {
         validGroups.add(groupId);
     });
     
+    // Build valid laser group IDs
+    const laserGroupNumbers = new Map(); // groupNumber -> [laserIndex, ...]
+    selectedLaserheads.forEach((laserhead, i) => {
+        if (laserhead.group) {
+            if (!laserGroupNumbers.has(laserhead.group)) {
+                laserGroupNumbers.set(laserhead.group, []);
+            }
+            laserGroupNumbers.get(laserhead.group).push(i);
+        }
+    });
+    for (const [groupNum, indices] of laserGroupNumbers) {
+        if (indices.length >= 2) {
+            validGroups.add(`laserGroup_${groupNum}`);
+        }
+    }
+    
     // Remove datasets that don't have a valid group
     chart.data.datasets = chart.data.datasets.filter(ds => {
         // Keep marker and total datasets
@@ -337,6 +353,60 @@ export function updateBreakabilityChart() {
 
         // Add dataset for this laser configuration
         addLaserDataset(laserhead, activeModules, i);
+    }
+    
+    // Add combined curves for laser groups (excluded from Total)
+    for (const [groupNum, indices] of laserGroupNumbers) {
+        if (indices.length < 2) continue;
+        
+        const groupId = `laserGroup_${groupNum}`;
+        const groupLabel = `Group ${groupNum}`;
+        
+        // Compute combined params for this group
+        const groupParams = indices.map(i => ({
+            maxPower: powers[i].max,
+            minPower: powers[i].min,
+            resistanceModifier: resistanceModifiers[i],
+            isVisible: true
+        }));
+        const { maxData, minData } = computeCombinedCurve(groupParams);
+        
+        const groupColor = getGroupColor(groupNum);
+        
+        // Find existing datasets for this group
+        const existingMin = chart.data.datasets.find(ds => ds.group === groupId && ds.label.endsWith('_min'));
+        const existingMax = chart.data.datasets.find(ds => ds.group === groupId && !ds.label.endsWith('_min'));
+        
+        if (existingMin && existingMax) {
+            existingMin.data = minData;
+            existingMin.label = groupLabel + '_min';
+            existingMin.borderColor = groupColor;
+            existingMin.backgroundColor = groupColor.replace(')', ', 0.1)').replace('rgb', 'rgba');
+            existingMax.data = maxData;
+            existingMax.label = groupLabel;
+            existingMax.borderColor = groupColor;
+        } else {
+            chart.data.datasets.push({
+                label: groupLabel + '_min',
+                data: minData,
+                borderColor: groupColor,
+                borderDash: [5, 5],
+                fill: '+1',
+                backgroundColor: groupColor.replace(')', ', 0.1)').replace('rgb', 'rgba'),
+                pointRadius: 0,
+                borderWidth: 3,
+                group: groupId
+            });
+            chart.data.datasets.push({
+                label: groupLabel,
+                data: maxData,
+                borderColor: groupColor,
+                fill: false,
+                pointRadius: 0,
+                borderWidth: 3,
+                group: groupId
+            });
+        }
     }
     
     // Handle total curves - update if exists, remove if only one laser left
@@ -497,6 +567,26 @@ export function updateBreakabilityChart() {
                     }
                 }
             });
+
+            // Skip total recalculation for group combined curves
+            if (group && group.startsWith('laserGroup_')) {
+                chart.update({
+                    duration: 800,
+                    easing: 'easeInOutQuart'
+                });
+                if (willHide) {
+                    setTimeout(() => {
+                        legend.chart.data.datasets.forEach(dataset => {
+                            if (dataset.group === group && dataset._animatingToZero) {
+                                dataset.hidden = true;
+                                delete dataset._animatingToZero;
+                            }
+                        });
+                        chart.update(0);
+                    }, 800);
+                }
+                return;
+            }
 
             // Recalculate totals after visibility change
             // Build visibility array accounting for pending visibility change
@@ -742,6 +832,20 @@ function getColor(index) {
     return colors[index % colors.length];
 }
 
+function getGroupColor(groupNum) {
+    // Distinct colors for group combined curves
+    const groupColors = [
+        'rgb(255, 255, 255)',  // placeholder for 0 (unused)
+        'rgb(220, 20, 60)',    // Crimson
+        'rgb(50, 205, 50)',    // Lime green
+        'rgb(255, 215, 0)',    // Gold
+        'rgb(0, 191, 255)',    // Deep sky blue
+        'rgb(255, 105, 180)',  // Hot pink
+        'rgb(138, 43, 226)',   // Blue violet
+    ];
+    return groupColors[groupNum % groupColors.length] || 'rgb(220, 20, 60)';
+}
+
 // Function to update chart colors when dark mode is toggled
 export function updateChartColors() {
     if (!chart) return;
@@ -786,6 +890,14 @@ export function updateChartColors() {
             dataset.borderColor = totalColor;
             if (dataset.label === 'Total_min') {
                 dataset.backgroundColor = totalColor.replace(')', ', 0.1)').replace('rgb', 'rgba');
+            }
+        } else if (dataset.group && dataset.group.startsWith('laserGroup_')) {
+            // Group combined curves - keep their assigned colors
+            const groupNum = parseInt(dataset.group.split('_')[1], 10);
+            const color = getGroupColor(groupNum);
+            dataset.borderColor = color;
+            if (dataset.label && dataset.label.endsWith('_min')) {
+                dataset.backgroundColor = color.replace(')', ', 0.1)').replace('rgb', 'rgba');
             }
         } else if (dataset.group && dataset.group !== 'marker') {
             // This is a laser dataset

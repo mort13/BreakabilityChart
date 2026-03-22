@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "modelPath": "ocr-data/models/digit_cnn.onnx",
+  "modelPath": "ocr-data/models/model_cnn.onnx",
   "charClasses": "0123456789.-%",
   "captureSettings": {
     "fps": 2

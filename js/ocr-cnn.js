@@ -6,6 +6,8 @@
 let session = null;
 let charClasses = '0123456789.-%';
 let modelLoaded = false;
+let inputName = 'input';
+let outputName = 'logits';
 
 /**
  * Load the ONNX model and its companion metadata.
@@ -33,9 +35,35 @@ export async function loadModel(modelPath, metaPath) {
             // Metadata file is optional
         }
 
-        session = await ort.InferenceSession.create(modelPath, {
-            executionProviders: ['wasm'],
-        });
+        const sessionOptions = { executionProviders: ['wasm'] };
+
+        // Check for external data file (.onnx.data) which stores model weights
+        const dataPath = modelPath + '.data';
+        try {
+            const dataResp = await fetch(dataPath);
+            if (dataResp.ok) {
+                const dataBuffer = await dataResp.arrayBuffer();
+                const dataFileName = dataPath.split('/').pop();
+                sessionOptions.externalData = [
+                    { path: dataFileName, data: new Uint8Array(dataBuffer) },
+                ];
+                console.log(`Loaded external data: ${dataFileName}`);
+            }
+        } catch (_) {
+            // No external data file — that's fine
+        }
+
+        session = await ort.InferenceSession.create(modelPath, sessionOptions);
+
+        // Auto-detect input/output tensor names from the model
+        if (session.inputNames.length > 0) {
+            inputName = session.inputNames[0];
+        }
+        if (session.outputNames.length > 0) {
+            outputName = session.outputNames[0];
+        }
+        console.log(`Model I/O: input="${inputName}", output="${outputName}"`);
+
         modelLoaded = true;
         console.log(`OCR model loaded: ${modelPath} (${charClasses.length} classes)`);
         return true;
@@ -78,8 +106,8 @@ export async function predictSingle(imageData) {
     if (!session) return { char: '?', confidence: 0 };
 
     const tensor = new ort.Tensor('float32', imageData, [1, 1, 28, 28]);
-    const results = await session.run({ input: tensor });
-    const logits = results.logits.data;
+    const results = await session.run({ [inputName]: tensor });
+    const logits = results[outputName].data;
 
     // Softmax
     const maxLogit = Math.max(...logits);
@@ -117,8 +145,8 @@ export async function predictSequence(images) {
     }
 
     const tensor = new ort.Tensor('float32', batchData, [batchSize, 1, 28, 28]);
-    const results = await session.run({ input: tensor });
-    const logits = results.logits.data;
+    const results = await session.run({ [inputName]: tensor });
+    const logits = results[outputName].data;
 
     let text = '';
     const numClasses = charClasses.length;

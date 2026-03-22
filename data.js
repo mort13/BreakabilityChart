@@ -9,7 +9,7 @@ async function loadMiningData() {
   const endpoints = ["laserheads", "modules", "gadgets"];
   for (const ep of endpoints) {
     const res = await fetch('https://uexcorp.space/api/v2/mining/laserheads', {
-  headers: { 'Authorization': '96e0d7370dc04112d89722be37babd9f61dd4bfa' }
+  headers: { 'Authorization': '' }
 })
     const json = await res.json();
     miningData[ep] = json;

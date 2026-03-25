@@ -1347,3 +1347,189 @@ td:first-child {
 .ocr-filter-details[open] summary {
   margin-bottom: 8px;
 }
+
+/* ─── New OCR Region / Preview Styles ─── */
+
+.ocr-region-section {
+  border-left: 3px solid var(--color-accent);
+}
+
+.ocr-fieldset {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 12px;
+  margin: 0 0 12px 0;
+}
+
+.ocr-fieldset legend {
+  font-weight: bold;
+  font-size: 0.9em;
+  color: var(--color-accent);
+  padding: 0 6px;
+}
+
+/* Slider rows: label + range + value */
+.ocr-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.ocr-slider-row label {
+  flex: 0 0 110px;
+  font-size: 0.85em;
+  color: var(--color-text-primary);
+}
+
+.ocr-slider-row input[type="range"] {
+  flex: 1;
+  min-width: 100px;
+  accent-color: var(--color-accent);
+}
+
+.ocr-slider-value {
+  flex: 0 0 40px;
+  text-align: right;
+  font-size: 0.85em;
+  font-family: monospace;
+  color: var(--color-text-primary);
+}
+
+/* Preview section */
+.ocr-preview-section {
+  margin-top: 8px;
+}
+
+.ocr-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.ocr-preview-title {
+  font-size: 0.9em;
+  font-weight: bold;
+  color: var(--color-text-primary);
+}
+
+.ocr-preview-recognized {
+  font-size: 1.2em;
+  font-weight: bold;
+  font-family: monospace;
+  color: var(--color-accent);
+}
+
+.ocr-preview-canvas {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: #111;
+  image-rendering: pixelated;
+}
+
+.ocr-preview-status {
+  font-size: 0.8em;
+  margin-top: 4px;
+  color: var(--color-text-muted);
+}
+
+.ocr-status-found {
+  color: #4caf50;
+}
+
+.ocr-status-missing {
+  color: #e67e22;
+}
+
+.ocr-status-error {
+  color: #e74c3c;
+}
+
+/* Screen preview */
+.ocr-screen-preview-wrap {
+  position: relative;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.ocr-screen-preview-canvas {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: #111;
+  cursor: crosshair;
+}
+
+.ocr-screen-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  font-size: 0.9em;
+  pointer-events: none;
+}
+
+.ocr-drag-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.ocr-drag-controls label {
+  font-size: 0.85em;
+  color: var(--color-text-primary);
+}
+
+.ocr-drag-target-btn {
+  padding: 4px 12px;
+  font-size: 0.85em;
+}
+
+.ocr-drag-target-btn.ocr-drag-active {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+  background: var(--color-accent);
+  color: #fff;
+}
+
+/* Ship selector */
+.ocr-ship-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.ocr-ship-label {
+  font-size: 0.85em;
+  color: var(--color-text-primary);
+  font-weight: bold;
+  flex: 0 0 auto;
+}
+
+.ocr-ship-btns {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ocr-ship-btn {
+  padding: 5px 14px;
+  font-size: 0.85em;
+  border-radius: 20px;
+}
+
+.ocr-ship-btn.ocr-ship-active {
+  background: var(--color-accent);
+  color: #fff;
+  border-color: var(--color-accent);
+}

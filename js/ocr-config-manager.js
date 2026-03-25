@@ -1,41 +1,43 @@
 /**
  * OCR configuration manager.
- * Loads defaults from ocr-data/ocr-config.json and merges with user overrides stored in localStorage.
- * Provides getters/setters and persistence.
+ * Loads defaults from ocr-data/ocr-config.json and merges with per-ship user overrides
+ * stored in localStorage. Each ship (prospector, mole, golem) has its own override bucket
+ * so settings like searchRegion and ROI offsets are saved independently per ship.
  */
 
-const STORAGE_KEY = 'ocrConfig';
+const STORAGE_KEY_SHIP = 'ocrActiveShip';
+const SHIP_STORAGE_PREFIX = 'ocrConfig_';
+const KNOWN_SHIPS = ['prospector', 'mole', 'golem'];
 
-let defaults = null;
-let userOverrides = {};
-let merged = null;
+let fileDefaults = null;   // parsed ocr-config.json
+let activeShip = 'prospector';
+let shipOverrides = {};    // user overrides for the currently active ship
+let merged = null;         // final merged config (fileDefaults + ship anchor paths + shipOverrides)
+
+// ── Public API ────────────────────────────────────────────────────────
 
 /**
- * Load the default config from the JSON file and merge with localStorage overrides.
+ * Load the default config from JSON, restore the last active ship, and build merged config.
  * @param {string} [configPath='ocr-data/ocr-config.json']
  * @returns {Promise<Object>} The merged config
  */
 export async function loadConfig(configPath = 'ocr-data/ocr-config.json') {
     try {
         const resp = await fetch(configPath);
-        defaults = await resp.json();
+        fileDefaults = await resp.json();
     } catch (e) {
         console.warn('Failed to load OCR config, using built-in defaults:', e);
-        defaults = builtInDefaults();
+        fileDefaults = builtInDefaults();
     }
 
-    // Load user overrides from localStorage
+    // Restore last active ship
     try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-            userOverrides = JSON.parse(stored);
-        }
-    } catch (e) {
-        console.warn('Failed to parse stored OCR config:', e);
-        userOverrides = {};
-    }
+        const stored = localStorage.getItem(STORAGE_KEY_SHIP);
+        if (stored && KNOWN_SHIPS.includes(stored)) activeShip = stored;
+    } catch (_) {}
 
-    merged = deepMerge(defaults, userOverrides);
+    _loadShipOverrides();
+    _rebuild();
     return merged;
 }
 
@@ -48,7 +50,36 @@ export function getConfig() {
 }
 
 /**
- * Get a specific ROI config by name (e.g. "mass", "resistance").
+ * Get the active ship name.
+ * @returns {string}
+ */
+export function getActiveShip() {
+    return activeShip;
+}
+
+/**
+ * Get list of known ship names.
+ * @returns {string[]}
+ */
+export function getShips() {
+    return KNOWN_SHIPS;
+}
+
+/**
+ * Switch to a different ship. Saves nothing extra — each ship's overrides
+ * are already persisted independently in localStorage.
+ * @param {string} ship
+ */
+export function setActiveShip(ship) {
+    if (!KNOWN_SHIPS.includes(ship)) return;
+    activeShip = ship;
+    try { localStorage.setItem(STORAGE_KEY_SHIP, ship); } catch (_) {}
+    _loadShipOverrides();
+    _rebuild();
+}
+
+/**
+ * Get a specific ROI config by name.
  * @param {string} name
  * @returns {Object|null}
  */
@@ -68,77 +99,125 @@ export function getAnchor(name) {
 }
 
 /**
- * Update a user override and persist to localStorage.
+ * Update a user override for the active ship and persist to localStorage.
  * Uses dot-notation path, e.g. "rois.mass.xOffset" = 130.
  * @param {string} path
  * @param {*} value
  */
 export function setOverride(path, value) {
-    setNestedValue(userOverrides, path, value);
-    merged = deepMerge(defaults || builtInDefaults(), userOverrides);
-    saveToStorage();
+    setNestedValue(shipOverrides, path, value);
+    _rebuild();
+    _saveShipOverrides();
 }
 
 /**
- * Update an entire ROI definition.
- * @param {string} name - ROI name (e.g. "mass")
- * @param {Object} roiDef - Full ROI definition object
+ * Update an entire ROI definition for the active ship.
+ * @param {string} name
+ * @param {Object} roiDef
  */
 export function setROIOverride(name, roiDef) {
-    if (!userOverrides.rois) userOverrides.rois = {};
-    userOverrides.rois[name] = roiDef;
-    merged = deepMerge(defaults || builtInDefaults(), userOverrides);
-    saveToStorage();
+    if (!shipOverrides.rois) shipOverrides.rois = {};
+    shipOverrides.rois[name] = roiDef;
+    _rebuild();
+    _saveShipOverrides();
 }
 
 /**
- * Update an entire anchor definition.
+ * Update an entire anchor definition for the active ship.
  * @param {string} name
  * @param {Object} anchorDef
  */
 export function setAnchorOverride(name, anchorDef) {
-    if (!userOverrides.anchors) userOverrides.anchors = {};
-    userOverrides.anchors[name] = anchorDef;
-    merged = deepMerge(defaults || builtInDefaults(), userOverrides);
-    saveToStorage();
+    if (!shipOverrides.anchors) shipOverrides.anchors = {};
+    shipOverrides.anchors[name] = anchorDef;
+    _rebuild();
+    _saveShipOverrides();
 }
 
 /**
- * Reset all user overrides back to defaults.
+ * Reset user overrides for the active ship back to defaults.
  */
 export function resetToDefaults() {
-    userOverrides = {};
-    merged = deepMerge(defaults || builtInDefaults(), {});
-    localStorage.removeItem(STORAGE_KEY);
+    shipOverrides = {};
+    _rebuild();
+    try { localStorage.removeItem(SHIP_STORAGE_PREFIX + activeShip); } catch (_) {}
 }
 
 /**
- * Get the raw user overrides (for debugging or export).
+ * Get the raw user overrides for the active ship (for debugging/export).
  * @returns {Object}
  */
 export function getUserOverrides() {
-    return { ...userOverrides };
+    return { ...shipOverrides };
 }
 
-// ── Internal helpers ──
+// ── Internal helpers ──────────────────────────────────────────────────
 
-function saveToStorage() {
+/** Load per-ship overrides from localStorage into shipOverrides. */
+function _loadShipOverrides() {
     try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(userOverrides));
+        const stored = localStorage.getItem(SHIP_STORAGE_PREFIX + activeShip);
+        shipOverrides = stored ? JSON.parse(stored) : {};
+    } catch (e) {
+        console.warn(`Failed to parse stored config for ship "${activeShip}":`, e);
+        shipOverrides = {};
+    }
+}
+
+/** Persist current ship overrides to localStorage. */
+function _saveShipOverrides() {
+    try {
+        localStorage.setItem(SHIP_STORAGE_PREFIX + activeShip, JSON.stringify(shipOverrides));
     } catch (e) {
         console.warn('Failed to save OCR config to localStorage:', e);
     }
 }
 
+/**
+ * Rebuild `merged` from: fileDefaults → ship anchor paths → shipOverrides.
+ * The ship's anchor template paths and default thresholds override the base anchors,
+ * and then user overrides (searchRegion, ROI offsets, etc.) are applied on top.
+ */
+function _rebuild() {
+    const base = fileDefaults || builtInDefaults();
+
+    // Apply ship-specific anchor overrides (templatePath, matchThreshold) from the ships block
+    const shipDef = base.ships?.[activeShip] || {};
+    let withShip = deepMerge(base, shipDef);
+
+    // Apply user overrides for this ship
+    merged = deepMerge(withShip, shipOverrides);
+}
+
 function builtInDefaults() {
     return {
-        version: 1,
-        modelPath: 'ocr-data/models/digit_cnn.onnx',
+        version: 2,
+        modelPath: 'ocr-data/models/model_cnn.onnx',
         charClasses: '0123456789.-%',
-        captureSettings: { fps: 2 },
+        captureSettings: { fps: 10 },
+        ships: {
+            prospector: {
+                anchors: {
+                    mass:       { templatePath: 'ocr-data/anchors/prospector/mass.jpg',       matchThreshold: 0.51 },
+                    resistance: { templatePath: 'ocr-data/anchors/prospector/resistance.jpg', matchThreshold: 0.60 },
+                },
+            },
+            mole: {
+                anchors: {
+                    mass:       { templatePath: 'ocr-data/anchors/mole/mass.jpg',       matchThreshold: 0.51 },
+                    resistance: { templatePath: 'ocr-data/anchors/mole/percentage.jpg', matchThreshold: 0.60 },
+                },
+            },
+            golem: {
+                anchors: {
+                    mass:       { templatePath: 'ocr-data/anchors/golem/mass.jpg',       matchThreshold: 0.51 },
+                    resistance: { templatePath: 'ocr-data/anchors/golem/resistance.jpg', matchThreshold: 0.60 },
+                },
+            },
+        },
         anchors: {
-            mass: { templatePath: 'ocr-data/anchors/mass.jpg', matchThreshold: 0.51, searchROI: null },
-            resistance: { templatePath: 'ocr-data/anchors/resistance.jpg', matchThreshold: 0.6, searchROI: null },
+            mass:       { templatePath: 'ocr-data/anchors/prospector/mass.jpg',       matchThreshold: 0.51, searchRegion: { x: 0, y: 0, w: 0, h: 0 } },
+            resistance: { templatePath: 'ocr-data/anchors/prospector/resistance.jpg', matchThreshold: 0.60, searchRegion: { x: 0, y: 0, w: 0, h: 0 } },
         },
         rois: {
             mass: {
@@ -180,3 +259,5 @@ function setNestedValue(obj, path, value) {
     }
     cur[keys[keys.length - 1]] = value;
 }
+
+// ── End of module ─────────────────────────────────────────────────────

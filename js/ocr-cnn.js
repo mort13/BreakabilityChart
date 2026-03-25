@@ -167,6 +167,57 @@ export async function predictSequence(images) {
 }
 
 /**
+ * Classify a batch with per-character confidence details.
+ * @param {Float32Array[]} images - Array of 784-element Float32Arrays
+ * @returns {Promise<{text: string, details: Array<{char: string, confidence: number}>}>}
+ */
+export async function predictSequenceWithDetails(images) {
+    if (!session || images.length === 0) return { text: '', details: [] };
+
+    const batchSize = images.length;
+    const batchData = new Float32Array(batchSize * 784);
+    for (let i = 0; i < batchSize; i++) {
+        batchData.set(images[i], i * 784);
+    }
+
+    const tensor = new ort.Tensor('float32', batchData, [batchSize, 1, 28, 28]);
+    const results = await session.run({ [inputName]: tensor });
+    const logits = results[outputName].data;
+
+    let text = '';
+    const details = [];
+    const numClasses = charClasses.length;
+
+    for (let b = 0; b < batchSize; b++) {
+        const offset = b * numClasses;
+        let maxLogit = logits[offset];
+        for (let c = 1; c < numClasses; c++) {
+            if (logits[offset + c] > maxLogit) maxLogit = logits[offset + c];
+        }
+        let sumExp = 0;
+        const probs = new Float32Array(numClasses);
+        for (let c = 0; c < numClasses; c++) {
+            probs[c] = Math.exp(logits[offset + c] - maxLogit);
+            sumExp += probs[c];
+        }
+        let bestIdx = 0;
+        let bestProb = 0;
+        for (let c = 0; c < numClasses; c++) {
+            probs[c] /= sumExp;
+            if (probs[c] > bestProb) {
+                bestProb = probs[c];
+                bestIdx = c;
+            }
+        }
+        const ch = charClasses[bestIdx] || '?';
+        text += ch;
+        details.push({ char: ch, confidence: bestProb });
+    }
+
+    return { text, details };
+}
+
+/**
  * Unload the model and free resources.
  */
 export function unloadModel() {

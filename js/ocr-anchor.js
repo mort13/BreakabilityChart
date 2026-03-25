@@ -91,46 +91,71 @@ export function findAnchor(frameGray, frameW, frameH, tmplGray, tmplW, tmplH, th
     tmplStd = Math.sqrt(tmplStd);
     if (tmplStd === 0) return notFound;
 
-    // Slide template over search area, compute NCC
+    // Slide template over search area, compute NCC.
+    // Two-pass coarse-to-fine: stride 4 first, then refine in local neighbourhood.
     const maxX = sW - tmplW;
     const maxY = sH - tmplH;
+
+    function nccAt(sx, sy) {
+        let patchSum = 0;
+        for (let ty = 0; ty < tmplH; ty++) {
+            const rowOff = (sy + ty) * sW + sx;
+            for (let tx = 0; tx < tmplW; tx++) {
+                patchSum += searchGray[rowOff + tx];
+            }
+        }
+        const patchMean = patchSum / tmplN;
+        let numer = 0;
+        let patchStd = 0;
+        for (let ty = 0; ty < tmplH; ty++) {
+            const rowOff = (sy + ty) * sW + sx;
+            const tRowOff = ty * tmplW;
+            for (let tx = 0; tx < tmplW; tx++) {
+                const pd = searchGray[rowOff + tx] - patchMean;
+                const td = tmplGray[tRowOff + tx] - tmplMean;
+                numer += pd * td;
+                patchStd += pd * pd;
+            }
+        }
+        patchStd = Math.sqrt(patchStd);
+        if (patchStd === 0) return -Infinity;
+        return numer / (patchStd * tmplStd);
+    }
+
     let bestScore = -Infinity;
     let bestX = 0;
     let bestY = 0;
 
-    for (let sy = 0; sy <= maxY; sy++) {
-        for (let sx = 0; sx <= maxX; sx++) {
-            // Compute patch mean
-            let patchSum = 0;
-            for (let ty = 0; ty < tmplH; ty++) {
-                const rowOff = (sy + ty) * sW + sx;
-                for (let tx = 0; tx < tmplW; tx++) {
-                    patchSum += searchGray[rowOff + tx];
-                }
-            }
-            const patchMean = patchSum / tmplN;
+    // Pass 1: coarse search (stride 4) — skip if search area is small enough
+    const STRIDE = 4;
+    const useCoarse = maxX > STRIDE * 4 && maxY > STRIDE * 4;
+    const step = useCoarse ? STRIDE : 1;
 
-            // Compute NCC numerator and patch std
-            let numer = 0;
-            let patchStd = 0;
-            for (let ty = 0; ty < tmplH; ty++) {
-                const rowOff = (sy + ty) * sW + sx;
-                const tRowOff = ty * tmplW;
-                for (let tx = 0; tx < tmplW; tx++) {
-                    const pd = searchGray[rowOff + tx] - patchMean;
-                    const td = tmplGray[tRowOff + tx] - tmplMean;
-                    numer += pd * td;
-                    patchStd += pd * pd;
-                }
-            }
-            patchStd = Math.sqrt(patchStd);
-            if (patchStd === 0) continue;
-
-            const score = numer / (patchStd * tmplStd);
+    for (let sy = 0; sy <= maxY; sy += step) {
+        for (let sx = 0; sx <= maxX; sx += step) {
+            const score = nccAt(sx, sy);
             if (score > bestScore) {
                 bestScore = score;
                 bestX = sx;
                 bestY = sy;
+            }
+        }
+    }
+
+    // Pass 2: refine around best coarse match at single-pixel resolution
+    if (useCoarse) {
+        const rx0 = Math.max(0, bestX - STRIDE);
+        const rx1 = Math.min(maxX, bestX + STRIDE);
+        const ry0 = Math.max(0, bestY - STRIDE);
+        const ry1 = Math.min(maxY, bestY + STRIDE);
+        for (let sy = ry0; sy <= ry1; sy++) {
+            for (let sx = rx0; sx <= rx1; sx++) {
+                const score = nccAt(sx, sy);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestX = sx;
+                    bestY = sy;
+                }
             }
         }
     }

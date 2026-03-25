@@ -1,14 +1,15 @@
 /**
  * OCR recognition pipeline.
- * Orchestrates: screen capture -> anchor matching -> ROI extraction -> filtering -> segmentation -> CNN prediction.
- * Emits results via a callback so the UI can display them.
+ * Captures screen, finds anchors in defined search regions, extracts ROIs,
+ * preprocesses (brightness/contrast/greyscale) and feeds into CNN for digit recognition.
+ * Supports preview mode (debug images for UI) and headless mode (values only).
  */
 
 import { loadTemplate, findAnchor } from './ocr-anchor.js';
 import { applyFilters, toGrayscale } from './ocr-filters.js';
 import { segment } from './ocr-segmenter.js';
-import { loadModel, predictSequence, isModelLoaded } from './ocr-cnn.js';
-import { getConfig, getROI, getAnchor } from './ocr-config-manager.js';
+import { loadModel, predictSequenceWithDetails, isModelLoaded } from './ocr-cnn.js';
+import { getConfig, getAnchor } from './ocr-config-manager.js';
 
 let mediaStream = null;
 let videoEl = null;
@@ -16,36 +17,37 @@ let captureCanvas = null;
 let captureCtx = null;
 let intervalId = null;
 let running = false;
+let processing = false;
+let previewEnabled = true;
 
-// Loaded anchor templates: { [name]: { gray, width, height } }
+/** Thumbnail canvas for full-frame preview (downscaled). */
+let thumbCanvas = null;
+let thumbCtx = null;
+const THUMB_MAX_W = 640;
+
 const anchorTemplates = {};
-
-// Callback: (results: { mass?: string, resistance?: string, debug?: Object }) => void
 let onResultCallback = null;
+let onStopCallback = null;
 
 /**
- * Initialize the pipeline: load model and anchor templates from config.
- * @param {Function} onResult - Callback receiving recognized values each frame
- * @returns {Promise<boolean>}
+ * Initialize: load ONNX model and anchor templates.
+ * @param {Function} onResult - callback receiving results each frame
  */
-export async function init(onResult) {
+export async function init(onResult, onStop) {
     onResultCallback = onResult;
+    onStopCallback = onStop || null;
     const cfg = getConfig();
 
-    // Load ONNX model
     const modelOk = await loadModel(cfg.modelPath);
-    if (!modelOk) {
-        console.warn('OCR pipeline: model not loaded — inference will be skipped');
-    }
+    if (!modelOk) console.warn('OCR pipeline: model not loaded');
 
-    // Load anchor templates
     for (const [name, anchorCfg] of Object.entries(cfg.anchors || {})) {
         const tmpl = await loadTemplate(anchorCfg.templatePath);
         if (tmpl) {
             anchorTemplates[name] = tmpl;
             console.log(`Anchor "${name}" loaded (${tmpl.width}x${tmpl.height})`);
         } else {
-            console.warn(`Failed to load anchor template: ${anchorCfg.templatePath}`);
+            console.warn(`Failed to load anchor: ${anchorCfg.templatePath}`);
         }
     }
 
@@ -53,8 +55,25 @@ export async function init(onResult) {
 }
 
 /**
- * Start screen capture and OCR processing.
- * @returns {Promise<boolean>}
+ * Reload anchor templates from the current config (e.g. after a ship switch).
+ * Safe to call while capture is running.
+ * @returns {Promise<void>}
+ */
+export async function reloadAnchors() {
+    const cfg = getConfig();
+    for (const [name, anchorCfg] of Object.entries(cfg.anchors || {})) {
+        const tmpl = await loadTemplate(anchorCfg.templatePath);
+        if (tmpl) {
+            anchorTemplates[name] = tmpl;
+            console.log(`Anchor "${name}" reloaded (${tmpl.width}x${tmpl.height})`);
+        } else {
+            console.warn(`Failed to reload anchor: ${anchorCfg.templatePath}`);
+        }
+    }
+}
+
+/**
+ * Start screen capture and begin processing loop.
  */
 export async function start() {
     if (running) return true;
@@ -65,11 +84,10 @@ export async function start() {
             audio: false,
         });
     } catch (e) {
-        console.error('Screen capture denied or failed:', e);
+        console.error('Screen capture denied:', e);
         return false;
     }
 
-    // Create hidden video element to receive the stream
     videoEl = document.createElement('video');
     videoEl.srcObject = mediaStream;
     videoEl.muted = true;
@@ -78,146 +96,239 @@ export async function start() {
     captureCanvas = document.createElement('canvas');
     captureCtx = captureCanvas.getContext('2d', { willReadFrequently: true });
 
-    const cfg = getConfig();
-    const fps = cfg.captureSettings?.fps || 2;
+    thumbCanvas = document.createElement('canvas');
+    thumbCtx = thumbCanvas.getContext('2d');
+
     running = true;
+    mediaStream.getVideoTracks()[0].addEventListener('ended', () => stop());
 
-    // Handle stream ending (user clicks "Stop sharing" in the browser prompt)
-    mediaStream.getVideoTracks()[0].addEventListener('ended', () => {
-        stop();
-    });
-
-    intervalId = setInterval(() => processFrame(), 1000 / fps);
-    console.log(`OCR pipeline started at ${fps} FPS`);
+    startLoop();
     return true;
 }
 
-/**
- * Stop capture and clean up.
- */
+function startLoop() {
+    if (intervalId) clearInterval(intervalId);
+    const cfg = getConfig();
+    const fps = cfg.captureSettings?.fps || 10;
+    intervalId = setInterval(tick, 1000 / fps);
+    console.log(`OCR loop at ${fps} Hz`);
+}
+
+/** Call after changing fps setting to restart the interval. */
+export function updateFps() {
+    if (running) startLoop();
+}
+
+/** Stop capture and clean up. */
 export function stop() {
+    const wasRunning = running;
     running = false;
-    if (intervalId) {
-        clearInterval(intervalId);
-        intervalId = null;
-    }
-    if (mediaStream) {
-        mediaStream.getTracks().forEach(t => t.stop());
-        mediaStream = null;
-    }
-    if (videoEl) {
-        videoEl.srcObject = null;
-        videoEl = null;
-    }
+    if (intervalId) { clearInterval(intervalId); intervalId = null; }
+    if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+    if (videoEl) { videoEl.srcObject = null; videoEl = null; }
     console.log('OCR pipeline stopped');
+    if (wasRunning && onStopCallback) onStopCallback();
+}
+
+export function isRunning() { return running; }
+
+/**
+ * Return the current video frame dimensions (full capture resolution).
+ * @returns {{width: number, height: number} | null}
+ */
+export function getFrameDimensions() {
+    if (!videoEl || videoEl.readyState < 2) return null;
+    return { width: videoEl.videoWidth, height: videoEl.videoHeight };
 }
 
 /**
- * @returns {boolean}
+ * Return the thumbnail canvas for the current capture frame.
+ * The canvas is re-used each frame and scaled to max THUMB_MAX_W wide.
+ * @returns {HTMLCanvasElement | null}
  */
-export function isRunning() {
-    return running;
+export function getThumbCanvas() {
+    return thumbCanvas;
 }
 
-/**
- * Process a single frame: anchor match, ROI extract, filter, segment, predict.
- */
+/** Enable/disable preview data generation (disable when OCR tab not visible). */
+export function setPreviewEnabled(enabled) { previewEnabled = enabled; }
+
+function tick() {
+    if (processing) return;
+    processing = true;
+    processFrame().finally(() => { processing = false; });
+}
+
 async function processFrame() {
     if (!videoEl || videoEl.readyState < 2) return;
 
-    // Capture current video frame to canvas
     const vw = videoEl.videoWidth;
     const vh = videoEl.videoHeight;
-    if (vw === 0 || vh === 0) return;
+    if (!vw || !vh) return;
 
     captureCanvas.width = vw;
     captureCanvas.height = vh;
     captureCtx.drawImage(videoEl, 0, 0, vw, vh);
 
-    const frameImageData = captureCtx.getImageData(0, 0, vw, vh);
-    const frameGray = toGrayscale(frameImageData);
+    // Generate a downscaled thumbnail for the live screen preview
+    if (previewEnabled && thumbCanvas && thumbCtx) {
+        const scale = Math.min(1, THUMB_MAX_W / vw);
+        const tw = Math.round(vw * scale);
+        const th = Math.round(vh * scale);
+        if (thumbCanvas.width !== tw || thumbCanvas.height !== th) {
+            thumbCanvas.width = tw;
+            thumbCanvas.height = th;
+        }
+        thumbCtx.drawImage(captureCanvas, 0, 0, tw, th);
+    }
 
     const cfg = getConfig();
     const results = {};
-    const debug = {};
+    const previews = {};
 
-    // Process each ROI
     for (const [roiName, roiCfg] of Object.entries(cfg.rois || {})) {
         const anchorName = roiCfg.anchorName || roiName;
         const anchorCfg = getAnchor(anchorName);
         const tmpl = anchorTemplates[anchorName];
 
         if (!tmpl || !anchorCfg) {
-            debug[roiName] = { error: `anchor "${anchorName}" not available` };
+            previews[roiName] = { error: `Anchor "${anchorName}" not loaded` };
             continue;
         }
 
-        // Find anchor in frame
-        const anchorResult = findAnchor(
-            frameGray, vw, vh,
+        // Determine search region (0/0/0/0 means full frame)
+        const sr = anchorCfg.searchRegion || null;
+        let searchImageData, offX = 0, offY = 0;
+
+        if (sr && sr.w > 0 && sr.h > 0) {
+            const sx = Math.max(0, Math.min(sr.x, vw - 1));
+            const sy = Math.max(0, Math.min(sr.y, vh - 1));
+            const sw = Math.min(sr.w, vw - sx);
+            const sh = Math.min(sr.h, vh - sy);
+            if (sw < tmpl.width || sh < tmpl.height) {
+                previews[roiName] = { error: 'Search region too small for anchor' };
+                continue;
+            }
+            searchImageData = captureCtx.getImageData(sx, sy, sw, sh);
+            offX = sx;
+            offY = sy;
+        } else {
+            searchImageData = captureCtx.getImageData(0, 0, vw, vh);
+        }
+
+        const searchGray = toGrayscale(searchImageData);
+
+        const match = findAnchor(
+            searchGray, searchImageData.width, searchImageData.height,
             tmpl.gray, tmpl.width, tmpl.height,
-            anchorCfg.matchThreshold,
-            anchorCfg.searchROI,
+            anchorCfg.matchThreshold
         );
 
-        debug[roiName] = { anchor: anchorResult };
+        const absAnchorX = match.x + offX;
+        const absAnchorY = match.y + offY;
 
-        if (!anchorResult.found) continue;
+        const preview = {
+            anchorFound: match.found,
+            anchorConfidence: match.confidence,
+            anchorX: absAnchorX,
+            anchorY: absAnchorY,
+        };
 
-        // Compute ROI absolute position
-        const roiX = Math.max(0, anchorResult.x + roiCfg.xOffset);
-        const roiY = Math.max(0, anchorResult.y + roiCfg.yOffset);
-        const roiX2 = Math.min(vw, roiX + roiCfg.width);
-        const roiY2 = Math.min(vh, roiY + roiCfg.height);
-        const roiW = roiX2 - roiX;
-        const roiH = roiY2 - roiY;
+        // Attach search region image for the small preview (always, even if anchor not found)
+        if (previewEnabled) {
+            preview.searchImageData = searchImageData;
+            preview.searchW = searchImageData.width;
+            preview.searchH = searchImageData.height;
+            // Anchor position relative to search region
+            preview.anchorRelX = match.x;
+            preview.anchorRelY = match.y;
+            preview.anchorW = tmpl.width;
+            preview.anchorH = tmpl.height;
+        }
 
-        if (roiW <= 0 || roiH <= 0) continue;
+        if (!match.found) {
+            // Still include ROI offset info so the UI can show projected ROI position
+            if (previewEnabled) {
+                preview.roiRelX = match.x + (roiCfg.xOffset || 0);
+                preview.roiRelY = match.y + (roiCfg.yOffset || 0);
+                preview.roiW = roiCfg.width || 50;
+                preview.roiH = roiCfg.height || 24;
+            }
+            previews[roiName] = preview;
+            continue;
+        }
 
-        // Extract ROI from full frame ImageData
-        const roiImageData = captureCtx.getImageData(roiX, roiY, roiW, roiH);
+        // Compute ROI absolute position from anchor
+        const rx = Math.max(0, absAnchorX + (roiCfg.xOffset || 0));
+        const ry = Math.max(0, absAnchorY + (roiCfg.yOffset || 0));
+        const rw = Math.min(roiCfg.width || 50, vw - rx);
+        const rh = Math.min(roiCfg.height || 24, vh - ry);
+        if (rw <= 0 || rh <= 0) { previews[roiName] = preview; continue; }
 
-        // Apply filters
-        const filtered = applyFilters(roiImageData, roiCfg.filters || {});
+        // Extract ROI pixels from full canvas
+        const roiImageData = captureCtx.getImageData(rx, ry, rw, rh);
 
-        // Convert to grayscale for segmentation
-        const filteredGray = toGrayscale(filtered);
-
-        // Segment characters
-        const chars = segment(filteredGray, roiW, roiH, {
-            segMode: roiCfg.segMode,
-            charWidth: roiCfg.charWidth,
-            charCount: roiCfg.charCount,
+        // Preprocess: brightness, contrast, force greyscale
+        const filters = roiCfg.filters || {};
+        const filtered = applyFilters(roiImageData, {
+            brightness: filters.brightness || 0,
+            contrast: filters.contrast || 0,
+            grayscale: true,
+            thresholdEnabled: false,
+            invert: false,
+            channel: 'none',
         });
 
-        debug[roiName].charCount = chars.length;
+        const grayROI = toGrayscale(filtered);
 
-        // Predict if model is loaded
+        // Segment using fixed width
+        const charCount = roiCfg.charCount || 5;
+        const chars = segment(grayROI, rw, rh, {
+            segMode: 'fixed_width',
+            charCount: charCount,
+        });
+
+        // CNN prediction
+        let text = '';
+        let charDetails = [];
         if (isModelLoaded() && chars.length > 0) {
-            const text = await predictSequence(chars);
-            results[roiName] = text;
-            debug[roiName].text = text;
+            const pred = await predictSequenceWithDetails(chars);
+            text = pred.text;
+            charDetails = pred.details;
         }
+
+        results[roiName] = text;
+        preview.text = text;
+
+        // Attach preview data only when OCR tab is visible
+        if (previewEnabled) {
+            preview.roiImageData = filtered;
+            preview.roiRelX = match.x + (roiCfg.xOffset || 0);
+            preview.roiRelY = match.y + (roiCfg.yOffset || 0);
+            preview.roiW = rw;
+            preview.roiH = rh;
+            preview.segments = getSegmentBoundaries(rw, charCount);
+            preview.charDetails = charDetails;
+        }
+
+        previews[roiName] = preview;
     }
 
     if (onResultCallback) {
-        onResultCallback({ ...results, _debug: debug });
+        onResultCallback({ ...results, _previews: previews });
     }
 }
 
-/**
- * Run a single-frame OCR pass (for testing/calibration without continuous capture).
- * Requires an active mediaStream.
- * @returns {Promise<Object>}
- */
-export async function singleFrame() {
-    if (!videoEl || videoEl.readyState < 2) return {};
-    return new Promise((resolve) => {
-        const origCb = onResultCallback;
-        onResultCallback = (result) => {
-            onResultCallback = origCb;
-            resolve(result);
-        };
-        processFrame();
-    });
+/** Compute fixed-width segment boundary positions. */
+function getSegmentBoundaries(roiW, charCount) {
+    if (charCount <= 0) return [];
+    const cw = roiW / charCount;
+    const boundaries = [];
+    for (let i = 0; i < charCount; i++) {
+        boundaries.push({
+            x: Math.floor(i * cw),
+            w: Math.floor((i + 1) * cw) - Math.floor(i * cw),
+        });
+    }
+    return boundaries;
 }

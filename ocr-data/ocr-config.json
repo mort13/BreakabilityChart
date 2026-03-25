@@ -1,20 +1,40 @@
 {
-  "version": 1,
+  "version": 2,
   "modelPath": "ocr-data/models/model_cnn.onnx",
   "charClasses": "0123456789.-%",
   "captureSettings": {
-    "fps": 2
+    "fps": 10
+  },
+  "ships": {
+    "prospector": {
+      "anchors": {
+        "mass":       { "templatePath": "ocr-data/anchors/prospector/mass.jpg",       "matchThreshold": 0.51 },
+        "resistance": { "templatePath": "ocr-data/anchors/prospector/resistance.jpg", "matchThreshold": 0.60 }
+      }
+    },
+    "mole": {
+      "anchors": {
+        "mass":       { "templatePath": "ocr-data/anchors/mole/mass.jpg",       "matchThreshold": 0.51 },
+        "resistance": { "templatePath": "ocr-data/anchors/mole/percentage.jpg", "matchThreshold": 0.60 }
+      }
+    },
+    "golem": {
+      "anchors": {
+        "mass":       { "templatePath": "ocr-data/anchors/golem/mass.jpg",       "matchThreshold": 0.51 },
+        "resistance": { "templatePath": "ocr-data/anchors/golem/resistance.jpg", "matchThreshold": 0.60 }
+      }
+    }
   },
   "anchors": {
     "mass": {
-      "templatePath": "ocr-data/anchors/mass.jpg",
+      "templatePath": "ocr-data/anchors/prospector/mass.jpg",
       "matchThreshold": 0.51,
-      "searchROI": null
+      "searchRegion": { "x": 0, "y": 0, "w": 0, "h": 0 }
     },
     "resistance": {
-      "templatePath": "ocr-data/anchors/resistance.jpg",
-      "matchThreshold": 0.6,
-      "searchROI": null
+      "templatePath": "ocr-data/anchors/prospector/resistance.jpg",
+      "matchThreshold": 0.60,
+      "searchRegion": { "x": 0, "y": 0, "w": 0, "h": 0 }
     }
   },
   "rois": {

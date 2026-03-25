@@ -14,6 +14,7 @@ import {
 import { toggleModule } from './laserhead-manager.js';
 import { updateMarker, updateBreakabilityChart, updateChartColors } from './chart-manager.js';
 import { clearAllData } from './storage-manager.js';
+import { setOCRTabActive } from './ocr-ui.js';
 
 export function equalizeCardDimensions(cards) {
     // Reset any previous fixed dimensions
@@ -72,6 +73,9 @@ export function setupTabs() {
                 updateBreakabilityChart();
                 updateMarker(); // Update marker/power calculations
             }
+
+            // Notify OCR pipeline whether it should generate preview data
+            setOCRTabActive(contentId === 'ocr');
         });
     });
 }

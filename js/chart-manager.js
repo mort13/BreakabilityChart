@@ -310,10 +310,14 @@ export function updateBreakabilityChart() {
     const laserGroupNumbers = new Map(); // groupNumber -> [laserIndex, ...]
     selectedLaserheads.forEach((laserhead, i) => {
         if (laserhead.group) {
-            if (!laserGroupNumbers.has(laserhead.group)) {
-                laserGroupNumbers.set(laserhead.group, []);
-            }
-            laserGroupNumbers.get(laserhead.group).push(i);
+            // Support both legacy single number and new array of numbers
+            const groups = Array.isArray(laserhead.group) ? laserhead.group : [laserhead.group];
+            groups.forEach(groupNum => {
+                if (!laserGroupNumbers.has(groupNum)) {
+                    laserGroupNumbers.set(groupNum, []);
+                }
+                laserGroupNumbers.get(groupNum).push(i);
+            });
         }
     });
     for (const [groupNum, indices] of laserGroupNumbers) {

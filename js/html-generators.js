@@ -193,8 +193,8 @@ export function generateSelectedLaserheadHTML(laserhead, idx, attributeRowsHTML,
                 <div class="size">S${laserhead.size || 1}</div>
                 <div class="group-field">
                     <label>G</label>
-                    <input type="number" class="group-input" data-laser-idx="${idx}" 
-                           value="${laserhead.group || ''}" min="1" placeholder="-">
+                    <input type="text" class="group-input" data-laser-idx="${idx}" 
+                           value="${Array.isArray(laserhead.group) ? laserhead.group.join(',') : (laserhead.group || '')}" placeholder="-">
                 </div>
                 <div class="name" contenteditable="true" 
                      data-original-name="${laserhead.customName || cleanLaserName(laserhead.name)}">

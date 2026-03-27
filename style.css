@@ -646,7 +646,7 @@ button:hover {
 }
 
 .selected-laserhead .group-input {
-  width: 10px;
+  width: 36px;
   padding: 1px 1px;
   font-size: 11px;
   border: 1px solid var(--color-border);
@@ -658,11 +658,6 @@ button:hover {
   appearance: textfield;
 }
 
-.selected-laserhead .group-input::-webkit-outer-spin-button,
-.selected-laserhead .group-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
 
 .selected-laserhead .group-input:focus {
   outline: none;

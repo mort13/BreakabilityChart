@@ -291,10 +291,11 @@ function addGroupInputHandlers(container) {
         input.addEventListener('change', function() {
             const idx = parseInt(this.dataset.laserIdx, 10);
             const val = this.value.trim();
-            if (val === '' || isNaN(parseInt(val, 10))) {
+            const groups = val.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n > 0);
+            if (groups.length === 0) {
                 delete selectedLaserheads[idx].group;
             } else {
-                selectedLaserheads[idx].group = parseInt(val, 10);
+                selectedLaserheads[idx].group = groups;
             }
             saveLaserSetup(selectedLaserheads);
             updateBreakabilityChart();

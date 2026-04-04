@@ -2318,7 +2318,7 @@
         "item_name": "Rieger Module",
         "item_uuid": "44b6d85a-ad86-479b-8cd9-5b3d9ab9eddc",
         "attribute_name": "Mining Laser Power",
-        "value": "+15",
+        "value": "115",
         "unit": "%",
         "date_added": 0,
         "date_modified": 1745568142

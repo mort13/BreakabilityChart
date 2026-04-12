@@ -142,6 +142,9 @@ export function setupChart() {
                             }
                         });
                         
+                        // Update required power display immediately
+                        updateMarker();
+
                         // Update with custom animation duration
                         legend.chart.update({
                             duration: 800,
@@ -633,6 +636,9 @@ export function updateBreakabilityChart() {
             if (totalMaxDataset) totalMaxDataset.data = newTotalMaxData;
             if (totalMinDataset) totalMinDataset.data = newTotalMinData;
 
+            // Update required power display immediately
+            updateMarker();
+
             // Single update for all animations
             chart.update({
                 duration: 800,
@@ -721,18 +727,25 @@ function calculateRequiredPowerDisplay(mass, resistance) {
         return;
     }
     
-    // Build list of lasers with their parameters
-    const laserParameters = selectedLaserheads.map((laserhead) => {
-        const activeModules = laserhead.modules?.filter(m => m && m.isActive !== false) || [];
-        const resistanceMod = operatorSeatMode ? 1 : calculateResistanceModifier(laserhead, activeModules, selectedGadget);
-        
-        return {
-            name: laserhead.customName || cleanLaserName(laserhead.name),
-            maxPower: calculateTotalPower(laserhead, activeModules, true),
-            minPower: calculateTotalPower(laserhead, activeModules, false),
-            resistanceModifier: resistanceMod
-        };
-    });
+    // Build list of lasers with their parameters, excluding hidden (toggled-off) laserheads
+    const laserParameters = selectedLaserheads
+        .map((laserhead, i) => {
+            const laserLabel = laserhead.customName || cleanLaserName(laserhead.name);
+            const groupId = `laser_${i}_${laserLabel}`;
+            const laserDataset = chart.data.datasets.find(ds => ds.group === groupId && !ds.label.endsWith('_min'));
+            if (laserDataset && (laserDataset.hidden || laserDataset._animatingToZero)) return null;
+
+            const activeModules = laserhead.modules?.filter(m => m && m.isActive !== false) || [];
+            const resistanceMod = operatorSeatMode ? 1 : calculateResistanceModifier(laserhead, activeModules, selectedGadget);
+
+            return {
+                name: laserLabel,
+                maxPower: calculateTotalPower(laserhead, activeModules, true),
+                minPower: calculateTotalPower(laserhead, activeModules, false),
+                resistanceModifier: resistanceMod
+            };
+        })
+        .filter(p => p !== null);
     
     // Use calculation function to distribute power
     const distribution = distributePowerAcrossLasers(mass, resistance, laserParameters);

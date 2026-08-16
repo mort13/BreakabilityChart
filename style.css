@@ -686,6 +686,48 @@ button:hover {
   box-shadow: 0 0 0 2px var(--color-accent-focus);
 }
 
+.editable-power {
+  cursor: pointer;
+  position: relative;
+}
+
+.editable-power::after {
+  content: '✎';
+  font-size: 9px;
+  opacity: 0;
+  margin-left: 3px;
+  color: var(--color-text-secondary, #888);
+  transition: opacity 0.15s;
+}
+
+.editable-power:hover::after {
+  opacity: 1;
+}
+
+.editable-power.custom-power {
+  color: var(--color-accent, #e8a838);
+}
+
+.power-edit-input {
+  width: 60px;
+  padding: 1px 4px;
+  font-size: inherit;
+  font-family: inherit;
+  font-weight: bold;
+  text-align: right;
+  border: 1px solid var(--color-accent, #e8a838);
+  border-radius: 3px;
+  background: var(--color-bg-input-focus, #fff);
+  color: var(--color-text-values);
+  box-shadow: 0 0 0 2px var(--color-accent-focus, rgba(232,168,56,0.35));
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.power-edit-input:focus {
+  outline: none;
+}
+
 .module-name.clickable {
   cursor: pointer;
   transition: color 0.2s;

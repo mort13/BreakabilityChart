@@ -219,6 +219,10 @@ export function roundAndFormatValue(value) {
  * @returns {number} - Total power value
  */
 export function calculateTotalPower(laserhead, modules, useMax = true) {
+    // Custom power override bypasses JSON value and module modifiers
+    const customVal = useMax ? laserhead.customPowers?.max : laserhead.customPowers?.min;
+    if (customVal !== undefined && customVal !== null) return customVal;
+
     const powerAttrName = useMax ? "Maximum Laser Power" : "Minimum Laser Power";
     const baseAttr = laserhead.attributes.find(attr => attr.attribute_name === powerAttrName);
     

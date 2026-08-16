@@ -8,7 +8,7 @@ import {
 } from './data-manager.js';
 import { updateBreakabilityChart } from './chart-manager.js';
 import { isActiveModule } from './module-manager.js';
-import { calculateAttributeValue, createSyntheticAttribute } from './calculations.js';
+import { calculateAttributeValue, createSyntheticAttribute, calculateTotalPower } from './calculations.js';
 import { saveLaserSetup, loadLaserSetup, saveActiveSizes, loadActiveSizes } from './storage-manager.js';
 import { 
     generateLaserheadCardHTML,
@@ -396,6 +396,14 @@ export function renderSelectedLaserheads() {
         // Generate table rows with all attributes, filling in empty rows where needed
         const rows = sortedAllAttributes.map(attrName => {
             const attr = attrMap.get(attrName);
+            if ((attrName === 'Maximum Laser Power' || attrName === 'Minimum Laser Power') && attr) {
+                const useMax = attrName === 'Maximum Laser Power';
+                const displayValue = calculateTotalPower(laserhead, laserhead.modules || [], useMax);
+                const isCustom = useMax
+                    ? (laserhead.customPowers?.max !== undefined && laserhead.customPowers.max !== null)
+                    : (laserhead.customPowers?.min !== undefined && laserhead.customPowers.min !== null);
+                return generateAttributeRow(attrName, attr, { laserIdx: idx, attrName, displayValue, isCustom });
+            }
             return generateAttributeRow(attrName, attr);
         }).join('');
 
@@ -438,9 +446,79 @@ export function renderSelectedLaserheads() {
     
     // Add event handlers for group input fields
     addGroupInputHandlers(container);
+
+    // Add double-click handlers for editable power values
+    addPowerEditHandlers(container);
     
     // Equalize card heights after rendering
     equalizeSelectedCardHeights();
+}
+
+function addPowerEditHandlers(container) {
+    container.querySelectorAll('.editable-power').forEach(cell => {
+        cell.addEventListener('dblclick', function () {
+            if (this.querySelector('input')) return; // already editing
+            const laserIdx = parseInt(this.dataset.laserIdx, 10);
+            const attrName = this.dataset.attrName;
+            const currentValue = this.textContent.trim();
+
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.value = currentValue;
+            input.className = 'power-edit-input';
+            input.step = '0.01';
+            input.min = '0';
+
+            this.textContent = '';
+            this.appendChild(input);
+            input.focus();
+            input.select();
+
+            let committed = false;
+            const commit = () => {
+                if (committed) return;
+                committed = true;
+                const raw = input.value.trim();
+                if (raw !== '' && !isNaN(parseFloat(raw)) && parseFloat(raw) > 0) {
+                    if (!selectedLaserheads[laserIdx].customPowers) {
+                        selectedLaserheads[laserIdx].customPowers = {};
+                    }
+                    if (attrName === 'Maximum Laser Power') {
+                        selectedLaserheads[laserIdx].customPowers.max = parseFloat(raw);
+                    } else {
+                        selectedLaserheads[laserIdx].customPowers.min = parseFloat(raw);
+                    }
+                } else if (raw === '') {
+                    // empty input resets to JSON default
+                    if (selectedLaserheads[laserIdx].customPowers) {
+                        if (attrName === 'Maximum Laser Power') {
+                            delete selectedLaserheads[laserIdx].customPowers.max;
+                        } else {
+                            delete selectedLaserheads[laserIdx].customPowers.min;
+                        }
+                    }
+                } else {
+                    // invalid value – just re-render without changes
+                    renderSelectedLaserheads();
+                    return;
+                }
+                saveLaserSetup(selectedLaserheads);
+                renderSelectedLaserheads();
+                updateBreakabilityChart();
+            };
+
+            const cancel = () => {
+                committed = true;
+                renderSelectedLaserheads();
+            };
+
+            input.addEventListener('blur', commit);
+            input.addEventListener('keydown', e => {
+                if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+                if (e.key === 'Escape') { input.removeEventListener('blur', commit); cancel(); }
+            });
+        });
+    });
 }
 
 // Function to equalize the height of all selected laserhead cards using padding

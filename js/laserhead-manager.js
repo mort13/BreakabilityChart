@@ -66,6 +66,15 @@ function setupSizeFilters() {
     });
 }
 
+// Number of module slots for a laserhead. Missing attribute defaults to 3;
+// an empty or non-numeric value (e.g. Klein-S1 in the UEX data) means no slots.
+function getModuleSlotCount(laserhead) {
+    const moduleSlotAttr = laserhead.attributes?.find(attr => attr.attribute_name === "Module Slots");
+    if (!moduleSlotAttr) return 3;
+    const count = parseInt(moduleSlotAttr.value, 10);
+    return Number.isNaN(count) || count < 0 ? 0 : count;
+}
+
 // Process attributes for display
 function processAttribute(attr, ignoreAttributeFilter = false, modules = []) {
     const attrName = attr ? attr.attribute_name : '';
@@ -217,10 +226,8 @@ function selectLaserhead(id) {
         return;
     }
     
-    // Get the number of module slots for this laserhead
-    const moduleSlotAttr = laserhead.attributes?.find(attr => attr.attribute_name === "Module Slots");
-    const numModuleSlots = moduleSlotAttr ? parseInt(moduleSlotAttr.value, 10) : 3;
-    
+    const numModuleSlots = getModuleSlotCount(laserhead);
+
     // Initialize modules array with null placeholders to maintain stable indices
     const initializedModules = Array(numModuleSlots).fill(null);
     
@@ -349,9 +356,7 @@ export function renderSelectedLaserheads() {
     ).map(a => a.name);
     
     container.innerHTML = selectedLaserheads.map((laserhead, idx) => {
-        // Get the number of module slots from the laserhead attributes
-        const moduleSlotAttr = laserhead.attributes?.find(attr => attr.attribute_name === "Module Slots");
-        const numModuleSlots = moduleSlotAttr ? parseInt(moduleSlotAttr.value, 10) : 3;
+        const numModuleSlots = getModuleSlotCount(laserhead);
         
         // Process existing laserhead attributes
         const laserAttrs = (laserhead.attributes || [])

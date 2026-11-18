@@ -709,7 +709,7 @@ button:hover {
 }
 
 .power-edit-input {
-  width: 60px;
+  width: 90px;
   padding: 1px 4px;
   font-size: inherit;
   font-family: inherit;
@@ -726,6 +726,11 @@ button:hover {
 
 .power-edit-input:focus {
   outline: none;
+}
+
+.power-edit-input.invalid {
+  border-color: #d9534f;
+  box-shadow: 0 0 0 2px rgba(217, 83, 79, 0.35);
 }
 
 .module-name.clickable {

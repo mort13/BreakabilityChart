@@ -75,7 +75,7 @@ export function generateModuleCardHTML(module, visibleAttributes) {
 export function generateAttributeRow(attrName, attr, editableInfo = null) {
     if (editableInfo) {
         const customClass = editableInfo.isCustom ? ' custom-power' : '';
-        const valueCells = `<td class="value-number editable-power${customClass}" data-laser-idx="${editableInfo.laserIdx}" data-attr-name="${editableInfo.attrName}" title="Double-click to edit">${editableInfo.displayValue}</td><td class="value-unit">MW</td>`;
+        const valueCells = `<td class="value-number editable-power${customClass}" data-laser-idx="${editableInfo.laserIdx}" data-attr-name="${editableInfo.attrName}" title="${(editableInfo.title ?? 'Double-click to edit').replace(/"/g, '&quot;')}">${editableInfo.displayValue}</td><td class="value-unit">MW</td>`;
         return `
             <tr>
                 <td>${attr.name}</td>

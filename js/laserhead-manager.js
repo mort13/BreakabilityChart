@@ -8,7 +8,15 @@ import {
 } from './data-manager.js';
 import { updateBreakabilityChart } from './chart-manager.js';
 import { isActiveModule } from './module-manager.js';
-import { calculateAttributeValue, createSyntheticAttribute, calculateTotalPower } from './calculations.js';
+import {
+    calculateAttributeValue,
+    createSyntheticAttribute,
+    calculateTotalPower,
+    getBasePower,
+    hasCustomPower,
+    evaluateExpression,
+    roundValue
+} from './calculations.js';
 import { saveLaserSetup, loadLaserSetup, saveActiveSizes, loadActiveSizes } from './storage-manager.js';
 import { 
     generateLaserheadCardHTML,
@@ -404,10 +412,11 @@ export function renderSelectedLaserheads() {
             if ((attrName === 'Maximum Laser Power' || attrName === 'Minimum Laser Power') && attr) {
                 const useMax = attrName === 'Maximum Laser Power';
                 const displayValue = calculateTotalPower(laserhead, laserhead.modules || [], useMax);
-                const isCustom = useMax
-                    ? (laserhead.customPowers?.max !== undefined && laserhead.customPowers.max !== null)
-                    : (laserhead.customPowers?.min !== undefined && laserhead.customPowers.min !== null);
-                return generateAttributeRow(attrName, attr, { laserIdx: idx, attrName, displayValue, isCustom });
+                const isCustom = hasCustomPower(laserhead, useMax);
+                const title = isCustom
+                    ? `Custom base: ${getCustomPowerText(laserhead, useMax)} MW (modules applied on top). Double-click to edit, clear to reset.`
+                    : 'Double-click to set a custom base value (e.g. 3150*1.2)';
+                return generateAttributeRow(attrName, attr, { laserIdx: idx, attrName, displayValue, isCustom, title });
             }
             return generateAttributeRow(attrName, attr);
         }).join('');
@@ -459,68 +468,96 @@ export function renderSelectedLaserheads() {
     equalizeSelectedCardHeights();
 }
 
+/**
+ * Text to show for a custom base power: the expression the user typed, or the plain number.
+ */
+function getCustomPowerText(laserhead, useMax) {
+    const key = useMax ? 'max' : 'min';
+    return laserhead.customPowers?.[`${key}Expr`] ?? String(getBasePower(laserhead, useMax));
+}
+
 function addPowerEditHandlers(container) {
     container.querySelectorAll('.editable-power').forEach(cell => {
         cell.addEventListener('dblclick', function () {
             if (this.querySelector('input')) return; // already editing
             const laserIdx = parseInt(this.dataset.laserIdx, 10);
-            const attrName = this.dataset.attrName;
-            const currentValue = this.textContent.trim();
+            const laserhead = selectedLaserheads[laserIdx];
+            const useMax = this.dataset.attrName === 'Maximum Laser Power';
+            const key = useMax ? 'max' : 'min';
 
+            // Edit the base value (before modules), not the module-modified total
             const input = document.createElement('input');
-            input.type = 'number';
-            input.value = currentValue;
+            input.type = 'text';
+            input.value = hasCustomPower(laserhead, useMax)
+                ? getCustomPowerText(laserhead, useMax)
+                : String(getBasePower(laserhead, useMax) ?? '');
             input.className = 'power-edit-input';
-            input.step = '0.01';
-            input.min = '0';
+            input.spellcheck = false;
+            input.autocomplete = 'off';
+            input.title = 'Base value before modules. Math allowed, e.g. 3150*1.2. Clear to reset.';
 
             this.textContent = '';
             this.appendChild(input);
             input.focus();
             input.select();
 
-            let committed = false;
-            const commit = () => {
-                if (committed) return;
-                committed = true;
+            // Returns { ok, value } where value === null means "reset to default"
+            const parseInput = () => {
                 const raw = input.value.trim();
-                if (raw !== '' && !isNaN(parseFloat(raw)) && parseFloat(raw) > 0) {
-                    if (!selectedLaserheads[laserIdx].customPowers) {
-                        selectedLaserheads[laserIdx].customPowers = {};
-                    }
-                    if (attrName === 'Maximum Laser Power') {
-                        selectedLaserheads[laserIdx].customPowers.max = parseFloat(raw);
-                    } else {
-                        selectedLaserheads[laserIdx].customPowers.min = parseFloat(raw);
-                    }
-                } else if (raw === '') {
-                    // empty input resets to JSON default
-                    if (selectedLaserheads[laserIdx].customPowers) {
-                        if (attrName === 'Maximum Laser Power') {
-                            delete selectedLaserheads[laserIdx].customPowers.max;
-                        } else {
-                            delete selectedLaserheads[laserIdx].customPowers.min;
-                        }
-                    }
-                } else {
-                    // invalid value – just re-render without changes
+                if (raw === '') return { ok: true, value: null, raw };
+                const value = evaluateExpression(raw);
+                return { ok: value !== null && value > 0, value, raw };
+            };
+
+            input.addEventListener('input', () => {
+                input.classList.toggle('invalid', !parseInput().ok);
+            });
+
+            let finished = false;
+            const commit = () => {
+                if (finished) return;
+                const { ok, value, raw } = parseInput();
+                finished = true;
+                if (!ok) {
+                    // invalid value – discard and re-render without changes
                     renderSelectedLaserheads();
                     return;
+                }
+                if (value === null) {
+                    // empty input resets to JSON default
+                    if (laserhead.customPowers) {
+                        delete laserhead.customPowers[key];
+                        delete laserhead.customPowers[`${key}Expr`];
+                    }
+                } else {
+                    if (!laserhead.customPowers) laserhead.customPowers = {};
+                    laserhead.customPowers[key] = roundValue(value);
+                    // Remember the expression so it can be re-edited, plain numbers need no copy
+                    if (/^\d+(\.\d+)?$/.test(raw)) {
+                        delete laserhead.customPowers[`${key}Expr`];
+                    } else {
+                        laserhead.customPowers[`${key}Expr`] = raw;
+                    }
                 }
                 saveLaserSetup(selectedLaserheads);
                 renderSelectedLaserheads();
                 updateBreakabilityChart();
             };
 
-            const cancel = () => {
-                committed = true;
-                renderSelectedLaserheads();
-            };
-
             input.addEventListener('blur', commit);
             input.addEventListener('keydown', e => {
-                if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
-                if (e.key === 'Escape') { input.removeEventListener('blur', commit); cancel(); }
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (!parseInput().ok) {
+                        input.classList.add('invalid');
+                        return; // keep editing so the typo can be fixed
+                    }
+                    input.blur();
+                }
+                if (e.key === 'Escape') {
+                    finished = true;
+                    renderSelectedLaserheads();
+                }
             });
         });
     });

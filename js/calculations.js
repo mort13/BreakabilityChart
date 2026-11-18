@@ -212,37 +212,123 @@ export function roundAndFormatValue(value) {
 }
 
 /**
+ * Check whether the user has set a custom base power for a laserhead
+ * @param {Object} laserhead - Laserhead object
+ * @param {boolean} useMax - True for max power, false for min power
+ * @returns {boolean}
+ */
+export function hasCustomPower(laserhead, useMax = true) {
+    const customVal = useMax ? laserhead.customPowers?.max : laserhead.customPowers?.min;
+    return customVal !== undefined && customVal !== null;
+}
+
+/**
+ * Get the base power of a laserhead before module modifiers.
+ * A custom value replaces the JSON value as the base.
+ * @param {Object} laserhead - Laserhead object
+ * @param {boolean} useMax - True for max power, false for min power
+ * @returns {number|null} - Base power, or null if the laserhead has no such attribute
+ */
+export function getBasePower(laserhead, useMax = true) {
+    if (hasCustomPower(laserhead, useMax)) {
+        return useMax ? laserhead.customPowers.max : laserhead.customPowers.min;
+    }
+    const powerAttrName = useMax ? "Maximum Laser Power" : "Minimum Laser Power";
+    const baseAttr = laserhead.attributes?.find(attr => attr.attribute_name === powerAttrName);
+    return baseAttr ? parseFloat(baseAttr.value) : null;
+}
+
+/**
  * Calculate total power for a laserhead with modules
  * @param {Object} laserhead - Laserhead object
- * @param {Array} modules - Array of modules
+ * @param {Array} modules - Array of modules (null slots and toggled-off modules are ignored)
  * @param {boolean} useMax - True for max power, false for min power
  * @returns {number} - Total power value
  */
 export function calculateTotalPower(laserhead, modules, useMax = true) {
-    // Custom power override bypasses JSON value and module modifiers
-    const customVal = useMax ? laserhead.customPowers?.max : laserhead.customPowers?.min;
-    if (customVal !== undefined && customVal !== null) return customVal;
+    let power = getBasePower(laserhead, useMax);
+    if (power === null || isNaN(power)) return 0;
 
-    const powerAttrName = useMax ? "Maximum Laser Power" : "Minimum Laser Power";
-    const baseAttr = laserhead.attributes.find(attr => attr.attribute_name === powerAttrName);
-    
-    if (!baseAttr) return 0;
-    
-    let baseValue = parseFloat(baseAttr.value);
-    
-    // Collect all module modifiers for Mining Laser Power
-    const moduleModifiers = modules
-        .filter(m => m && m.attributes)
+    // Apply each module's Mining Laser Power modifier as factor = value/100
+    modules
+        .filter(m => m && m.attributes && m.isActive !== false)
         .map(m => m.attributes.find(a => a.attribute_name === "Mining Laser Power"))
         .filter(a => a && a.value)
-        .map(a => parseFloat(a.value));
-    
-    // Apply all module modifiers using factor = value/100
-    moduleModifiers.forEach(modValue => {
-        baseValue *= (modValue / 100);
-    });
-    
-    return roundValue(baseValue);
+        .forEach(a => {
+            power *= parseFloat(a.value) / 100;
+        });
+
+    return roundValue(power);
+}
+
+/**
+ * Safely evaluate a small arithmetic expression, e.g. "3150*1.2" or "(3150 + 200) / 2".
+ * Supports + - * / (also × ÷ x), parentheses, unary minus and "," or "." as decimal separator.
+ * No eval() is used.
+ * @param {string} input - Expression text
+ * @returns {number|null} - Result, or null if the expression is invalid
+ */
+export function evaluateExpression(input) {
+    if (typeof input !== 'string') return null;
+    // "3150 1" is a typo, not 31501
+    if (/[\d.,]\s+[\d.,]/.test(input)) return null;
+    const src = input
+        .replace(/[×xX]/g, '*')
+        .replace(/÷/g, '/')
+        .replace(/,/g, '.')
+        .replace(/\s+/g, '');
+    if (src === '') return null;
+
+    let pos = 0;
+    const peek = () => src[pos];
+
+    function parseNumber() {
+        const match = /^(\d+\.?\d*|\.\d+)/.exec(src.slice(pos));
+        if (!match) throw new Error('number expected');
+        pos += match[0].length;
+        return parseFloat(match[0]);
+    }
+
+    function parseFactor() {
+        if (peek() === '-') { pos++; return -parseFactor(); }
+        if (peek() === '+') { pos++; return parseFactor(); }
+        if (peek() === '(') {
+            pos++;
+            const value = parseSum();
+            if (peek() !== ')') throw new Error(') expected');
+            pos++;
+            return value;
+        }
+        return parseNumber();
+    }
+
+    function parseProduct() {
+        let value = parseFactor();
+        while (peek() === '*' || peek() === '/') {
+            const op = src[pos++];
+            const rhs = parseFactor();
+            value = op === '*' ? value * rhs : value / rhs;
+        }
+        return value;
+    }
+
+    function parseSum() {
+        let value = parseProduct();
+        while (peek() === '+' || peek() === '-') {
+            const op = src[pos++];
+            const rhs = parseProduct();
+            value = op === '+' ? value + rhs : value - rhs;
+        }
+        return value;
+    }
+
+    try {
+        const result = parseSum();
+        if (pos !== src.length || !isFinite(result)) return null;
+        return result;
+    } catch {
+        return null;
+    }
 }
 
 /**
